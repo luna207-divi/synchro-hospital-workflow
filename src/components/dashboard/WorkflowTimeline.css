@@ -1,0 +1,226 @@
+.ot-workflow-events-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.events-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3-5) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.events-title-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.events-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.events-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.live-stream-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background-color: var(--state-teal-light);
+  color: var(--state-teal-text);
+  border: 1px solid var(--state-teal-border);
+}
+
+.events-subhead {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Department Filter */
+.events-dept-filter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: var(--bg-subtle);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.dept-filter-btn {
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.dept-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.dept-filter-btn.is-active {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Timeline Body */
+.events-timeline-body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.timeline-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  position: relative;
+}
+
+/* Time Col */
+.event-time-col {
+  width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.event-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.event-id {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+/* Node Col */
+.event-node-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.event-icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.box-teal {
+  background-color: var(--state-teal-light);
+  color: var(--state-teal-text);
+  border: 1px solid var(--state-teal-border);
+}
+
+.box-indigo {
+  background-color: var(--pillar-ot-bg);
+  color: var(--pillar-ot-text);
+  border: 1px solid var(--pillar-ot-border);
+}
+
+.box-blue {
+  background-color: var(--pillar-admissions-bg);
+  color: var(--pillar-admissions-text);
+  border: 1px solid var(--pillar-admissions-border);
+}
+
+.event-connector-line {
+  width: 1.5px;
+  flex: 1;
+  min-height: 24px;
+  background-color: var(--border-subtle);
+  margin-top: 4px;
+}
+
+/* Content Col */
+.event-content-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  padding-bottom: var(--space-2);
+}
+
+.event-header-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.event-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.event-entity-id {
+  font-size: 10px;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+}
+
+.event-status-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+}
+
+.status-completed {
+  background-color: var(--state-teal-light);
+  color: var(--state-teal-text);
+  border: 1px solid var(--state-teal-border);
+}
+
+.status-in-progress {
+  background-color: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue-border);
+}
+
+.status-warning {
+  background-color: var(--state-amber-light);
+  color: var(--state-amber-text);
+  border: 1px solid var(--state-amber-border);
+}
+
+.event-description {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}

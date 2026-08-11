@@ -1,0 +1,323 @@
+/* ============================================================
+   READINESS GATES — Pre-flight checklist view
+   ============================================================ */
+
+.readiness-gates-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  max-width: 1200px;
+}
+
+.rg-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.rg-page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.rg-page-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  max-width: 440px;
+}
+
+.rg-header-stats {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.rg-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  min-width: 70px;
+}
+
+.rg-stat-ready {
+  background: var(--state-teal-light);
+  border: 1px solid var(--state-teal-border);
+}
+
+.rg-stat-risk {
+  background: var(--state-red-light);
+  border: 1px solid var(--state-red-border);
+}
+
+.rg-stat-total {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+}
+
+.rg-stat-number {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.rg-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Column legend */
+.rg-column-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.rg-legend-case {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rg-legend-gates {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.rg-legend-gate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Readiness List */
+.readiness-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+
+/* ── Readiness Row ───────────────────────────────── */
+
+.readiness-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  transition: box-shadow var(--transition-fast);
+}
+
+.readiness-row:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.readiness-row.row-all-ready {
+  border-left: 4px solid var(--state-teal);
+}
+
+.readiness-row.row-has-blocked {
+  border-left: 4px solid var(--state-red);
+}
+
+.readiness-row.row-partial {
+  border-left: 4px solid var(--state-amber);
+}
+
+
+/* ── Case Info Bar ───────────────────────────────── */
+
+.readiness-case-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.case-time-badge {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--text-primary);
+  min-width: 50px;
+}
+
+.case-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.case-patient-name {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.case-procedure-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.case-ot-label {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.readiness-score {
+  padding: var(--space-1-5) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  min-width: 50px;
+  justify-content: center;
+}
+
+.score-ready {
+  background: var(--state-teal-light);
+  border: 1px solid var(--state-teal-border);
+  color: var(--state-teal-text);
+}
+
+.score-blocked {
+  background: var(--state-red-light);
+  border: 1px solid var(--state-red-border);
+  color: var(--state-red-text);
+}
+
+.score-partial {
+  background: var(--state-amber-light);
+  border: 1px solid var(--state-amber-border);
+  color: var(--state-amber-text);
+}
+
+.score-number {
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+
+/* ── Three Gate Columns ──────────────────────────── */
+
+.readiness-gates-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+
+.readiness-gate-col {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.readiness-gate-col:last-child {
+  border-right: none;
+}
+
+.gate-col-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: var(--space-1-5);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.gate-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+
+.gate-col-ready .gate-col-header { color: var(--state-teal); }
+.gate-col-blocked .gate-col-header { color: var(--state-red); }
+.gate-col-partial .gate-col-header { color: var(--state-amber); }
+
+.gate-icon { flex-shrink: 0; }
+.gate-icon-ready { color: var(--state-teal); }
+.gate-icon-blocked { color: var(--state-red); }
+.gate-icon-partial { color: var(--state-amber); }
+
+.gate-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gate-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: var(--text-xs);
+}
+
+.check-indicator {
+  flex-shrink: 0;
+  display: flex;
+  margin-top: 1px;
+}
+
+.item-done .check-indicator { color: var(--state-teal); }
+.item-critical .check-indicator { color: var(--state-red); }
+.item-pending .check-indicator { color: var(--text-dim); }
+
+.check-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.item-done .check-label {
+  color: var(--text-muted);
+}
+
+.item-critical .check-label {
+  color: var(--state-red-text);
+  font-weight: 600;
+}
+
+.check-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.item-critical .check-note {
+  color: var(--state-red);
+  font-weight: 600;
+}

@@ -1,0 +1,87 @@
+/* ==========================================================
+   SYNCHRO — Button Component (Soft Atmosphere)
+   ========================================================== */
+
+.synchro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.synchro-btn:active {
+  transform: scale(0.98);
+}
+
+.synchro-btn.btn-xs {
+  font-size: var(--text-xs);
+  padding: 5px 12px;
+}
+
+.synchro-btn.btn-sm {
+  font-size: var(--text-xs);
+  padding: 7px 16px;
+}
+
+.synchro-btn.btn-md {
+  font-size: var(--text-sm);
+  padding: 9px 20px;
+}
+
+.synchro-btn.btn-lg {
+  font-size: var(--text-base);
+  padding: 12px 24px;
+}
+
+.synchro-btn.btn-primary {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 184, 219, 0.25);
+}
+
+.synchro-btn.btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 184, 219, 0.35);
+  transform: translateY(-1px);
+}
+
+.synchro-btn.btn-secondary {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-xs);
+}
+
+.synchro-btn.btn-secondary:hover {
+  background: #f8fafc;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.synchro-btn.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.synchro-btn.btn-ghost:hover {
+  background: #f1f5f9;
+  color: var(--text-primary);
+}
+
+.synchro-btn.btn-destructive {
+  background: var(--status-red-bg);
+  color: var(--status-red-text);
+  border-color: var(--status-red-border);
+}
+
+.synchro-btn.btn-destructive:hover {
+  background: #ffe4e6;
+  box-shadow: var(--status-red-glow);
+}

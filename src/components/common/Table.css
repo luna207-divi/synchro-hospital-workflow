@@ -1,0 +1,111 @@
+.ot-table-container {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.ot-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+/* Headers */
+.ot-table thead {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ot-table th {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.density-compact .ot-table th {
+  padding: var(--space-2) var(--space-3);
+}
+
+.density-normal .ot-table th {
+  padding: var(--space-2-5) var(--space-3-5);
+}
+
+.th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.ot-table th.is-sortable {
+  cursor: pointer;
+}
+
+.ot-table th.is-sortable:hover {
+  color: var(--text-primary);
+}
+
+.th-sort-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Rows & Cells */
+.ot-table-row {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color var(--transition-fast);
+}
+
+.ot-table-row:last-child {
+  border-bottom: none;
+}
+
+.ot-table-row:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.density-compact .ot-table td {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.density-normal .ot-table td {
+  padding: var(--space-2-5) var(--space-3-5);
+  font-size: var(--text-base);
+}
+
+.ot-table td {
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+/* Alignments */
+.ot-table .align-right {
+  text-align: right;
+}
+.ot-table .align-right .th-content {
+  justify-content: flex-end;
+}
+
+.ot-table .align-center {
+  text-align: center;
+}
+.ot-table .align-center .th-content {
+  justify-content: center;
+}
+
+/* Empty State */
+.ot-table-empty {
+  text-align: center;
+  padding: var(--space-8) !important;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

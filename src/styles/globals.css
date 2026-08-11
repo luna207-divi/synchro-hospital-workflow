@@ -1,0 +1,262 @@
+@import './variables.css';
+
+/* ==========================================================
+   SYNCHRO — Premium Healthcare Technology Global Interaction Pass
+   "Smooth, Subtle, Premium, Fast & Purposeful."
+   ========================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Light atmospheric radial wash backdrop with subtle ambient movement */
+body {
+  background: 
+    radial-gradient(circle at 15% 5%, rgba(207, 250, 254, 0.45) 0%, transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(224, 242, 254, 0.40) 0%, transparent 45%),
+    radial-gradient(circle at 50% 60%, rgba(219, 234, 254, 0.30) 0%, transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+  background-attachment: fixed;
+  animation: ambientGradientShift 16s ease-in-out infinite alternate;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* ── Deep Navy Typography ───────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-navy-head);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-cyan-hover);
+}
+
+/* ── Button Interactive Feedback ────────────────────────── */
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+input, select, textarea {
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--border-glow-cyan);
+}
+
+::selection {
+  background: rgba(6, 182, 212, 0.18);
+  color: var(--text-navy-head);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ── Soft Translucent Floating Glass Panels ───────────────── */
+
+.glass-panel {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+}
+
+.glass-card:hover {
+  border-color: var(--border-cyan);
+  box-shadow: var(--shadow-md), var(--shadow-cyan-glow);
+  transform: translateY(-4px);
+}
+
+/* ============================================================
+   PREMIUM MOTION & INTERACTION KEYFRAMES
+   ============================================================ */
+
+/* 1. Page View Transition */
+@keyframes pageViewTransition {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 2. Soft Ambient Background Gradient Movement */
+@keyframes ambientGradientShift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 100%; }
+}
+
+/* 3. Hero Floating Motion for 3D Visuals & Floating Tags */
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* 4. Inverse Float for Opposite Tag Synchrony */
+@keyframes subtleFloatReverse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* 5. Moving Workflow Dash Particles Along Connector Paths */
+@keyframes animatedDashFlow {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* 6. Soft Cyan Pulse for Active Stage Nodes & Badges */
+@keyframes softCyanPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4), 0 4px 16px rgba(6, 182, 212, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(6, 182, 212, 0), 0 6px 22px rgba(6, 182, 212, 0.35);
+  }
+}
+
+/* 7. Subtle Non-Aggressive Red Pulse for Blocked Interruption States */
+@keyframes softRedPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.35), 0 4px 14px rgba(244, 63, 94, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(244, 63, 94, 0), 0 6px 20px rgba(244, 63, 94, 0.28);
+  }
+}
+
+/* 8. Live Telemetry Dot Breathing */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.2); }
+}
+
+/* 9. Progress Bar Fill Animation */
+@keyframes progressFill {
+  from { width: 0%; }
+  to { width: var(--progress-val, 100%); }
+}
+
+/* 10. Slide Up Reveal for Cards */
+@keyframes slideUpReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Scroll-Triggered Reveal Classes ─────────────────────── */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 500ms var(--ease-smooth), transform 500ms var(--ease-smooth);
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* App View Container Transition */
+.app-view-container {
+  animation: pageViewTransition 350ms var(--ease-smooth);
+}
+
+/* Badge Utilities */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge-cyan  { background: var(--status-cyan-bg); color: var(--status-cyan-text); border: 1px solid var(--status-cyan-border); }
+.badge-green { background: var(--status-green-bg); color: var(--status-green-text); border: 1px solid var(--status-green-border); }
+.badge-amber { background: var(--status-amber-bg); color: var(--status-amber-text); border: 1px solid var(--status-amber-border); }
+.badge-red   { background: var(--status-red-bg); color: var(--status-red-text); border: 1px solid var(--status-red-border); }
+.badge-navy  { background: #f1f5f9; color: var(--text-navy-head); border: 1px solid var(--border-default); }
+
+.connector-line-done { stroke: var(--status-green); stroke-width: 2.5; stroke-dasharray: none; }
+.connector-line-active { stroke: var(--status-cyan); stroke-width: 2.5; stroke-dasharray: 6 4; animation: animatedDashFlow 1.2s linear infinite; }
+.connector-line-future { stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4 4; }

@@ -1,0 +1,156 @@
+:root {
+  /* ==========================================================
+     SYNCHRO — Premium Light Healthcare Technology Design System
+     Palette: White, Ice Blue, Soft Azure, Signature Cyan, Deep Navy
+     Animation: Subtle, Purposeful, Calm, Smooth (Healthcare Tech)
+     ========================================================== */
+
+  /* ── Canvas & Atmospheric Backgrounds ────────────────────── */
+  --bg-app:              #f4f8fc;
+  --bg-app-secondary:    #ffffff;
+  --bg-gradient-canvas:  linear-gradient(135deg, #ffffff 0%, #eef6fc 40%, #e0f2fe 75%, #ecfeff 100%);
+  
+  /* Atmospheric Light Glow Washes */
+  --bg-wash-ice:         rgba(224, 242, 254, 0.45);
+  --bg-wash-azure:       rgba(219, 234, 254, 0.35);
+  --bg-wash-cyan:        rgba(207, 250, 254, 0.40);
+
+  /* ── Translucent Soft Blue Glass Surfaces ────────────────── */
+  --surface-glass:       rgba(255, 255, 255, 0.82);
+  --surface-glass-blue:  rgba(240, 247, 255, 0.75);
+  --surface-card:        #ffffff;
+  --surface-hover:       rgba(241, 248, 255, 0.9);
+  --surface-active:      #e0f2fe;
+  --surface-inset:       rgba(240, 246, 252, 0.6);
+
+  /* Glass Blur & Light Passing Through */
+  --glass-blur:          14px;
+  --glass-blur-heavy:    24px;
+
+  /* ── Thin Translucent Borders & Soft Glows ──────────────── */
+  --border-default:      rgba(226, 232, 240, 0.85);
+  --border-subtle:       rgba(241, 245, 249, 0.9);
+  --border-cyan:         rgba(6, 182, 212, 0.22);
+  --border-azure:        rgba(37, 99, 235, 0.18);
+  --border-focus:        #06b6d4;
+  --border-glow-cyan:    0 0 0 3px rgba(6, 182, 212, 0.12);
+
+  /* ── Deep Navy & Slate Typography ───────────────────────── */
+  --text-navy-head:      #0a192f;
+  --text-primary:        #0f172a;
+  --text-secondary:      #334155;
+  --text-muted:          #64748b;
+  --text-dim:            #94a3b8;
+  --text-inverse:        #ffffff;
+  --text-cyan:           #0891b2;
+
+  /* ── Status Colors (GREEN = Ready, AMBER = Attention, RED = Blocked) ── */
+  --status-green:        #10b981;
+  --status-green-bg:     #ecfdf5;
+  --status-green-border: #a7f3d0;
+  --status-green-text:   #047857;
+  --status-green-glow:   0 4px 14px rgba(16, 185, 129, 0.12);
+
+  --status-amber:        #f59e0b;
+  --status-amber-bg:     #fffbeb;
+  --status-amber-border: #fde68a;
+  --status-amber-text:   #b45309;
+  --status-amber-glow:   0 4px 14px rgba(245, 158, 11, 0.12);
+
+  --status-red:          #f43f5e;
+  --status-red-bg:       #fff1f2;
+  --status-red-border:   #fecdd3;
+  --status-red-text:     #be123c;
+  --status-red-glow:     0 4px 16px rgba(244, 63, 94, 0.15);
+
+  --status-cyan:         #06b6d4;
+  --status-cyan-bg:      #ecfeff;
+  --status-cyan-border:  #a5f3fc;
+  --status-cyan-text:    #0891b2;
+  --status-cyan-glow:    0 4px 16px rgba(6, 182, 212, 0.18);
+
+  /* ── Signature Brand Accent — Cyan / Turquoise ─────────── */
+  --accent-cyan:          #06b6d4;
+  --accent-cyan-hover:    #0891b2;
+  --accent-cyan-bg:       #ecfeff;
+  --accent-cyan-glow:     0 4px 20px rgba(6, 182, 212, 0.2);
+  --accent-gradient:      linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+  --accent-azure-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+
+  /* ── Action Buttons ──────────────────────────────────────── */
+  --action-primary-bg:    #06b6d4;
+  --action-primary-hover: #0891b2;
+  --action-secondary-bg:  #ffffff;
+  --action-secondary-border: #cbd5e1;
+  --action-secondary-hover: #f8fafc;
+
+  /* ── Pillar Colors ───────────────────────────────────────── */
+  --pillar-admissions:    #2563eb;
+  --pillar-ot:            #7c3aed;
+  --pillar-cssd:          #0d9488;
+
+  /* ── Typography Scale ────────────────────────────────────── */
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', var(--font-sans);
+  --font-mono:    'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-xs:  0.75rem;
+  --text-sm:  0.8125rem;
+  --text-base: 0.875rem;
+  --text-md:  0.9375rem;
+  --text-lg:  1.0625rem;
+  --text-xl:  1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+
+  /* ── Spacing ─────────────────────────────────────────────── */
+  --space-1:   4px;
+  --space-1-5: 6px;
+  --space-2:   8px;
+  --space-2-5: 10px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+
+  /* ── Large Soft Rounded Corners ──────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   18px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  /* ── Very Light Shadows (Floating Effect) ────────────────── */
+  --shadow-xs:   0 2px 6px rgba(10, 25, 47, 0.03);
+  --shadow-sm:   0 4px 16px rgba(10, 25, 47, 0.04);
+  --shadow-md:   0 8px 24px rgba(10, 25, 47, 0.06);
+  --shadow-lg:   0 14px 36px rgba(10, 25, 47, 0.08);
+  --shadow-cyan-glow: 0 4px 20px rgba(6, 182, 212, 0.15);
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --sidebar-width:      250px;
+  --header-height:      68px;
+  --content-max-width:  1500px;
+
+  /* ── Professional Easing & Transition Timing System ──────── */
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce-soft: cubic-bezier(0.34, 1.25, 0.64, 1);
+
+  --transition-fast:   140ms var(--ease-in-out);
+  --transition-base:   220ms var(--ease-smooth);
+  --transition-smooth: 350ms var(--ease-smooth);
+  --transition-float:  4000ms ease-in-out infinite;
+
+  /* ── Z-Index Scale ───────────────────────────────────────── */
+  --z-base:      1;
+  --z-dropdown:  100;
+  --z-sticky:    200;
+  --z-modal:     400;
+}

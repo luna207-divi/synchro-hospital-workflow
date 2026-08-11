@@ -1,0 +1,196 @@
+.ot-trend-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.trend-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3-5) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.trend-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trend-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.trend-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.trend-period-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background-color: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue-border);
+}
+
+.trend-subhead {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.trend-summary-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.summary-stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.text-teal {
+  color: var(--state-teal-text) !important;
+}
+
+/* SVG Chart */
+.trend-chart-wrapper {
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.trend-svg {
+  width: 100%;
+  height: 155px;
+  overflow: visible;
+}
+
+.grid-line {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.target-benchmark-line {
+  stroke: var(--state-teal);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.trend-circle {
+  fill: #ffffff;
+  stroke: var(--primary-blue);
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition: r 0.15s ease;
+}
+
+.trend-circle.is-today {
+  fill: var(--primary-blue);
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.trend-circle:hover {
+  fill: var(--primary-blue);
+  stroke: #ffffff;
+}
+
+.point-text {
+  font-size: 9.5px;
+  fill: var(--text-secondary);
+  text-anchor: middle;
+  font-weight: 500;
+}
+
+.point-text.text-bold {
+  font-weight: 700;
+  fill: var(--primary-blue);
+}
+
+.axis-x-label {
+  font-size: 10px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  font-weight: 600;
+}
+
+.axis-x-label.label-today {
+  fill: var(--primary-blue);
+  font-weight: 800;
+}
+
+/* Footer Legend */
+.trend-footer-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.legend-items-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-line {
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.line-blue {
+  background-color: var(--primary-blue);
+}
+
+.line-dashed {
+  background: repeating-linear-gradient(to right, var(--state-teal), var(--state-teal) 3px, transparent 3px, transparent 6px);
+}
+
+.legend-note-right {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.legend-note-right strong {
+  color: var(--text-primary);
+}

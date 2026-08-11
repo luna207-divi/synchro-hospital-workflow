@@ -1,0 +1,101 @@
+.ot-card-component {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ot-card-component:hover {
+  border-color: var(--border-medium);
+}
+
+/* Density Variants */
+.density-compact .card-header {
+  padding: var(--space-2-5) var(--space-3);
+}
+.density-compact .card-body {
+  padding: var(--space-3);
+}
+.density-compact .card-footer {
+  padding: var(--space-2) var(--space-3);
+}
+
+.density-normal .card-header {
+  padding: var(--space-3-5) var(--space-4);
+}
+.density-normal .card-body {
+  padding: var(--space-4);
+}
+.density-normal .card-footer {
+  padding: var(--space-3) var(--space-4);
+}
+
+.density-spacious .card-header {
+  padding: var(--space-4) var(--space-5);
+}
+.density-spacious .card-body {
+  padding: var(--space-5);
+}
+.density-spacious .card-footer {
+  padding: var(--space-4) var(--space-5);
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Body */
+.card-body {
+  flex: 1;
+}
+
+/* Footer */
+.card-footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

@@ -1,0 +1,202 @@
+.ot-performance-sidebar {
+  width: 320px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  height: fit-content;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-6));
+}
+
+.perf-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-2-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.perf-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.perf-title {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.perf-live-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--state-teal-text);
+  background-color: var(--state-teal-light);
+  border: 1px solid var(--state-teal-border);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
+
+/* Metrics List */
+.perf-metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+}
+
+.perf-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-2-5);
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  border-left-width: 3px;
+}
+
+.border-color-blue { border-left-color: var(--primary-blue); }
+.border-color-indigo { border-left-color: var(--pillar-ot); }
+.border-color-teal { border-left-color: var(--state-teal); }
+.border-color-red { border-left-color: var(--state-red); }
+
+.perf-metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.perf-metric-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.perf-icon-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-bg-blue { background-color: var(--primary-blue-light); color: var(--primary-blue); }
+.badge-bg-indigo { background-color: var(--pillar-ot-bg); color: var(--pillar-ot-text); }
+.badge-bg-teal { background-color: var(--state-teal-light); color: var(--state-teal-text); }
+.badge-bg-red { background-color: var(--state-red-light); color: var(--state-red-text); }
+
+.perf-metric-val-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 1px;
+}
+
+.perf-metric-val {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.perf-metric-sub {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Suite Breakdown */
+.perf-suite-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.perf-section-heading {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.suite-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.suite-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.suite-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+}
+
+.suite-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.suite-status-text {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.suite-track {
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.suite-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.fill-teal { background-color: var(--state-teal); }
+.fill-amber { background-color: var(--state-amber); }
+.fill-red { background-color: var(--state-red); }
+.fill-blue { background-color: var(--primary-blue); }
+
+/* AI Insight */
+.perf-ai-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3);
+  background-color: var(--ai-purple-light);
+  border: 1px solid var(--ai-purple-border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--ai-purple-text);
+  line-height: 1.4;
+}
+
+.perf-ai-icon {
+  color: var(--ai-purple);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@media (max-width: 1200px) {
+  .ot-performance-sidebar {
+    width: 100%;
+    position: static;
+  }
+}

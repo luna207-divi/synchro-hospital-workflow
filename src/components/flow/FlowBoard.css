@@ -1,0 +1,820 @@
+/* ==========================================================
+   SYNCHRO — Flow Board (Sophisticated Animation System)
+   "Hospital Workflow, In Sync."
+   ========================================================== */
+
+.flow-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  animation: fadeIn 350ms ease;
+}
+
+/* ── Page Header Bar ──────────────────────────────────────── */
+.flow-board-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.flow-board-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.flow-board-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-navy-head);
+  letter-spacing: -0.03em;
+}
+
+.flow-board-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.flow-board-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.flow-board-date {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.flow-board-live {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-3-5);
+  border-radius: var(--radius-full);
+  background: var(--status-cyan-bg);
+  border: 1px solid var(--status-cyan-border);
+}
+
+.flow-board-live .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-cyan);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+.flow-board-live .live-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--status-cyan-text);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Section Containers & Staggered Reveal ────────────────── */
+.flow-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: slideUpReveal 450ms var(--ease-smooth) forwards;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-navy-head);
+  letter-spacing: -0.015em;
+}
+
+.section-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Stage Legend ────────────────────────────────────────── */
+.flow-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-1);
+}
+
+.flow-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.flow-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.flow-legend-dot.dot-done   { background: var(--status-green); }
+.flow-legend-dot.dot-active { background: var(--status-cyan); }
+.flow-legend-dot.dot-warn   { background: var(--status-amber); }
+.flow-legend-dot.dot-block  { background: var(--status-red); }
+.flow-legend-dot.dot-future { background: #cbd5e1; }
+
+/* ============================================================
+   HERO VISUAL BANNER — Connected Hospital Triad Hub
+   Communicates: "Everything in the hospital is connected."
+   ============================================================ */
+
+.hero-triad-banner {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-8);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 60%, #e6f4fe 100%);
+  border: 1px solid var(--border-cyan);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md), var(--shadow-cyan-glow);
+  position: relative;
+  overflow: hidden;
+  animation: slideUpReveal 400ms var(--ease-smooth);
+}
+
+.hero-triad-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 60%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: subtleFloat 8s ease-in-out infinite alternate;
+}
+
+.hero-banner-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  z-index: 1;
+}
+
+.hero-banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-3-5);
+  border-radius: var(--radius-full);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: var(--status-cyan-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: fit-content;
+}
+
+.hero-banner-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-navy-head);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.hero-banner-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 540px;
+}
+
+.hero-nodes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.triad-node-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-base);
+}
+
+.triad-node-card:hover {
+  border-color: var(--border-cyan);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.node-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.node-icon-blue { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.node-icon-purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.node-icon-teal { background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4; }
+
+.node-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.node-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-navy-head);
+}
+
+.node-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+/* 3D Hospital Graphic Showcase & Floating Motion */
+.hero-graphic-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-3d-graphic {
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  filter: drop-shadow(0 12px 28px rgba(6, 182, 212, 0.15));
+  animation: subtleFloat 5s ease-in-out infinite;
+  transition: transform var(--transition-smooth);
+}
+
+.hero-3d-graphic:hover {
+  transform: scale(1.03);
+}
+
+/* Floating Status Tags */
+.hero-floating-tag {
+  position: absolute;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-cyan);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+  transition: all var(--transition-base);
+}
+
+.hero-floating-tag:hover {
+  box-shadow: var(--shadow-md), var(--shadow-cyan-glow);
+}
+
+.tag-top-left {
+  top: 10px;
+  left: 0px;
+  color: var(--status-cyan-text);
+  animation: subtleFloat 4s ease-in-out infinite;
+}
+
+.tag-bottom-right {
+  bottom: 10px;
+  right: 0px;
+  color: var(--status-green-text);
+  animation: subtleFloatReverse 4.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   3D VISUAL CARDS GRID (Staggered Entrance Animation)
+   ============================================================ */
+
+.visual-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+.dept-visual-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  animation: slideUpReveal 450ms var(--ease-smooth) backwards;
+}
+
+.dept-visual-card:nth-child(1) { animation-delay: 80ms; }
+.dept-visual-card:nth-child(2) { animation-delay: 160ms; }
+.dept-visual-card:nth-child(3) { animation-delay: 240ms; }
+
+.dept-visual-card:hover {
+  border-color: var(--border-cyan);
+  box-shadow: var(--shadow-md), var(--shadow-cyan-glow);
+  transform: translateY(-4px);
+}
+
+.card-graphic-container {
+  width: 100%;
+  height: 140px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-3d-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-smooth);
+}
+
+.dept-visual-card:hover .card-3d-image {
+  transform: scale(1.06);
+}
+
+.card-body-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.card-dept-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.card-dept-title {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-navy-head);
+}
+
+.card-dept-metric {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   OT LANES PIPELINE & ANIMATED WORKFLOW PATHS
+   ============================================================ */
+
+.ot-lanes-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ot-lane {
+  display: grid;
+  grid-template-columns: 100px 1fr 240px 150px;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+  min-height: 84px;
+  animation: slideUpReveal 400ms var(--ease-smooth) backwards;
+}
+
+.ot-lane:nth-child(1) { animation-delay: 100ms; }
+.ot-lane:nth-child(2) { animation-delay: 180ms; }
+.ot-lane:nth-child(3) { animation-delay: 260ms; }
+.ot-lane:nth-child(4) { animation-delay: 340ms; }
+
+.ot-lane:hover {
+  border-color: var(--border-cyan);
+  box-shadow: var(--shadow-md), var(--shadow-cyan-glow);
+  transform: translateY(-3px);
+}
+
+.ot-lane.lane-green { border-left: 5px solid var(--status-green); }
+
+.ot-lane.lane-red {
+  border-left: 5px solid var(--status-red);
+  background: linear-gradient(90deg, rgba(255, 241, 242, 0.6) 0%, #ffffff 18%);
+  box-shadow: var(--shadow-md), 0 0 20px rgba(244, 63, 94, 0.08);
+}
+
+.ot-lane.lane-amber {
+  border-left: 5px solid var(--status-amber);
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.45) 0%, #ffffff 18%);
+}
+
+.ot-lane.lane-cyan {
+  border-left: 5px solid var(--status-cyan);
+  background: linear-gradient(90deg, rgba(236, 254, 255, 0.5) 0%, #ffffff 18%);
+}
+
+.ot-lane-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-id-text {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-navy-head);
+  letter-spacing: -0.01em;
+}
+
+.ot-lane-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stage-node-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.stage-node-wrapper.is-current { z-index: 2; }
+
+/* SVG Animated Workflow Connector Line */
+.stage-connector-svg {
+  width: 44px;
+  height: 6px;
+  flex-shrink: 0;
+}
+
+.connector-line-done {
+  stroke: var(--status-green);
+  stroke-width: 3;
+}
+
+.connector-line-active {
+  stroke: var(--status-cyan);
+  stroke-width: 3.5;
+  stroke-dasharray: 6 4;
+  animation: animatedDashFlow 1.2s linear infinite;
+}
+
+.connector-line-future {
+  stroke: #e2e8f0;
+  stroke-width: 2.5;
+}
+
+/* BROKEN CONNECTOR VISUAL */
+.connector-break {
+  width: 44px;
+  height: 6px;
+  position: relative;
+}
+
+.connector-break::before, .connector-break::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 38%;
+  height: 3px;
+  background: var(--status-red);
+  transform: translateY(-50%);
+}
+
+.connector-break::before { left: 0; }
+.connector-break::after { right: 0; }
+
+.connector-break-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--status-red-text);
+  background: var(--status-red-bg);
+  border: 1px solid var(--status-red-border);
+  padding: 3px;
+  border-radius: 50%;
+  animation: softRedPulse 2.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stage Nodes & Glow Effects */
+.stage-node {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.stage-done {
+  background: var(--status-green-bg);
+  border: 2px solid var(--status-green);
+  color: var(--status-green-text);
+}
+
+.stage-current-cyan {
+  background: var(--status-cyan-bg);
+  border: 2px solid var(--status-cyan);
+  color: var(--status-cyan-text);
+  animation: softCyanPulse 2.5s infinite;
+}
+
+.stage-current-amber {
+  background: var(--status-amber-bg);
+  border: 2px solid var(--status-amber);
+  color: var(--status-amber-text);
+  box-shadow: var(--status-amber-glow);
+}
+
+.stage-blocked {
+  background: var(--status-red-bg);
+  border: 2px solid var(--status-red);
+  color: var(--status-red-text);
+  animation: softRedPulse 2.5s infinite;
+}
+
+.stage-upcoming {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+}
+
+.stage-current-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background: #ffffff;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-xs);
+  animation: fadeIn 300ms ease;
+}
+
+.stage-label-green { color: var(--status-green-text); }
+.stage-label-cyan  { color: var(--status-cyan-text); }
+.stage-label-amber { color: var(--status-amber-text); }
+.stage-label-red   { color: var(--status-red-text); }
+
+.ot-lane-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lane-patient {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-navy-head);
+}
+
+.lane-procedure { font-size: var(--text-xs); color: var(--text-secondary); }
+.lane-surgeon { font-size: var(--text-2xs); color: var(--text-muted); }
+
+.lane-timing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.lane-elapsed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lane-delay {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.delay-red {
+  color: var(--status-red-text);
+  background: var(--status-red-bg);
+  border: 1px solid var(--status-red-border);
+}
+
+.delay-amber {
+  color: var(--status-amber-text);
+  background: var(--status-amber-bg);
+  border: 1px solid var(--status-amber-border);
+}
+
+.lane-expected { font-size: var(--text-2xs); color: var(--text-muted); }
+
+.lane-available-label {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--status-green-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.ot-lane-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3-5);
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-green { background: var(--status-green-bg); border: 1px solid var(--status-green-border); color: var(--status-green-text); }
+.status-cyan { background: var(--status-cyan-bg); border: 1px solid var(--status-cyan-border); color: var(--status-cyan-text); }
+.status-amber { background: var(--status-amber-bg); border: 1px solid var(--status-amber-border); color: var(--status-amber-text); }
+.status-red { background: var(--status-red-bg); border: 1px solid var(--status-red-border); color: var(--status-red-text); }
+
+/* Needs Attention Grid */
+.attention-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+
+.attention-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+  animation: slideUpReveal 450ms var(--ease-smooth) backwards;
+}
+
+.attention-card:nth-child(1) { animation-delay: 120ms; }
+.attention-card:nth-child(2) { animation-delay: 220ms; }
+.attention-card:nth-child(3) { animation-delay: 320ms; }
+
+.attention-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.attention-card.att-red {
+  border-left: 4px solid var(--status-red);
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+}
+
+.attention-card.att-amber {
+  border-left: 4px solid var(--status-amber);
+  background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.att-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.att-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.att-icon-red { background: var(--status-red-bg); color: var(--status-red-text); border: 1px solid var(--status-red-border); }
+.att-icon-amber { background: var(--status-amber-bg); color: var(--status-amber-text); border: 1px solid var(--status-amber-border); }
+
+.att-who { font-size: var(--text-2xs); font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); }
+.att-who-red { background: var(--status-red-bg); color: var(--status-red-text); border: 1px solid var(--status-red-border); }
+.att-who-amber { background: var(--status-amber-bg); color: var(--status-amber-text); border: 1px solid var(--status-amber-border); }
+
+.att-what { font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; color: var(--text-navy-head); }
+.att-why { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; }
+.att-time { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-muted); font-weight: 600; }
+
+/* Upcoming Timeline */
+.upcoming-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  animation: slideUpReveal 450ms var(--ease-smooth);
+}
+
+.upcoming-row {
+  display: grid;
+  grid-template-columns: 60px 32px 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition-fast);
+}
+
+.upcoming-row.is-last { border-bottom: none; }
+.upcoming-time { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--text-navy-head); }
+
+.upcoming-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upcoming-dot-green { background: var(--status-green-bg); color: var(--status-green-text); border: 1px solid var(--status-green-border); }
+.upcoming-dot-amber { background: var(--status-amber-bg); color: var(--status-amber-text); border: 1px solid var(--status-amber-border); }
+
+.upcoming-details { display: flex; flex-direction: column; gap: 2px; }
+.upcoming-header { display: flex; align-items: center; gap: var(--space-2); }
+.upcoming-patient { font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; color: var(--text-navy-head); }
+.upcoming-ot { font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 700; padding: 1px 6px; border-radius: var(--radius-xs); background: #f1f5f9; color: var(--text-secondary); }
+.upcoming-procedure { font-size: var(--text-xs); color: var(--text-secondary); }
+.upcoming-readiness { font-size: var(--text-2xs); font-weight: 700; display: flex; align-items: center; gap: var(--space-1); }
+.readiness-green { color: var(--status-green-text); }
+.readiness-amber { color: var(--status-amber-text); }

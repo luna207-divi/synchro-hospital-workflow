@@ -1,0 +1,93 @@
+.ot-readiness-triad {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px var(--space-2);
+  box-shadow: var(--shadow-xs);
+  line-height: 1;
+}
+
+/* Steps */
+.triad-step {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.step-type-icon {
+  color: var(--text-muted);
+}
+
+.step-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+}
+
+/* Status Icon colors */
+.icon-ready {
+  color: var(--state-teal);
+}
+
+.icon-pending {
+  color: var(--state-amber);
+}
+
+.icon-delayed {
+  color: var(--state-red);
+}
+
+.triad-separator {
+  width: 1px;
+  height: 12px;
+  background-color: var(--border-subtle);
+  margin: 0 2px;
+}
+
+/* Risk Score Tag */
+.triad-score-pill {
+  margin-left: var(--space-1);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.score-low {
+  background-color: var(--state-teal-light);
+  color: var(--state-teal-text);
+  border-color: var(--state-teal-border);
+}
+
+.score-medium {
+  background-color: var(--state-amber-light);
+  color: var(--state-amber-text);
+  border-color: var(--state-amber-border);
+}
+
+.score-high {
+  background-color: var(--state-red-light);
+  color: var(--state-red-text);
+  border-color: var(--state-red-border);
+}
+
+/* Sizes */
+.triad-size-sm {
+  padding: 2px var(--space-1-5);
+  gap: 2px;
+}
+.triad-size-sm .step-label {
+  font-size: 10px;
+}

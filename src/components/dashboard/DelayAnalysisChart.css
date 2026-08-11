@@ -1,0 +1,204 @@
+.ot-delay-analysis-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.delay-analysis-header {
+  padding: var(--space-3-5) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.analysis-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.analysis-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analysis-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.total-delay-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--state-red-text);
+  background-color: var(--state-red-light);
+  border: 1px solid var(--state-red-border);
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+}
+
+.analysis-subhead {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.delay-analysis-body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3-5);
+}
+
+/* Composite Segmented Bar */
+.segmented-distribution-bar {
+  height: 12px;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  gap: 1px;
+}
+
+.bar-segment {
+  height: 100%;
+  transition: opacity var(--transition-fast);
+}
+
+.bar-segment:hover {
+  opacity: 0.85;
+}
+
+.seg-teal { background-color: var(--state-teal); }
+.seg-blue { background-color: var(--primary-blue); }
+.seg-amber { background-color: var(--state-amber); }
+.seg-indigo { background-color: var(--pillar-ot); }
+.seg-slate { background-color: #94a3b8; }
+
+/* Causes Detailed List */
+.causes-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cause-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1-5) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-3);
+}
+
+.cause-item-row:last-child {
+  border-bottom: none;
+}
+
+.cause-info-left {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.cause-title-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.cause-color-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-teal { background-color: var(--state-teal); }
+.dot-blue { background-color: var(--primary-blue); }
+.dot-amber { background-color: var(--state-amber); }
+.dot-indigo { background-color: var(--pillar-ot); }
+.dot-slate { background-color: #94a3b8; }
+
+.cause-name {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.cause-factor-tag {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cause-metrics-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  flex-shrink: 0;
+}
+
+.cause-progress-track {
+  width: 90px;
+  height: 5px;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.cause-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+
+.fill-teal { background-color: var(--state-teal); }
+.fill-blue { background-color: var(--primary-blue); }
+.fill-amber { background-color: var(--state-amber); }
+.fill-indigo { background-color: var(--pillar-ot); }
+.fill-slate { background-color: #94a3b8; }
+
+.cause-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  width: 28px;
+  text-align: right;
+}
+
+.cause-impact {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 26px;
+  text-align: right;
+}
+
+/* AI Recommendation banner */
+.ai-delay-recommendation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--ai-purple-light);
+  border: 1px solid var(--ai-purple-border);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  color: var(--ai-purple-text);
+  line-height: 1.4;
+}
+
+.recommendation-sparkle {
+  color: var(--ai-purple);
+  flex-shrink: 0;
+  margin-top: 1px;
+}

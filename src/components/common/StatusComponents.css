@@ -1,0 +1,596 @@
+/* ============================================================
+   OTFlow AI — Status Components CSS
+   
+   4 status colors. Every state uses color + icon + text.
+   Thin borders. Subtle elevation. Generous whitespace.
+   ============================================================ */
+
+/* ── 1. WorkflowStatus ───────────────────────────────── */
+
+.wf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.wf-status-sm {
+  font-size: var(--text-2xs);
+  padding: 2px 6px;
+}
+
+.wf-status-md {
+  font-size: var(--text-xs);
+  padding: 3px 8px;
+}
+
+.wf-status-lg {
+  font-size: var(--text-sm);
+  padding: 4px 10px;
+}
+
+.wf-status-icon { flex-shrink: 0; }
+
+.wf-status-sm .wf-status-icon { width: 10px; height: 10px; }
+.wf-status-md .wf-status-icon { width: 12px; height: 12px; }
+.wf-status-lg .wf-status-icon { width: 14px; height: 14px; }
+
+.wf-status-green  { background: var(--status-green-bg);  color: var(--status-green-text);  border: 1px solid var(--status-green-border); }
+.wf-status-amber  { background: var(--status-amber-bg);  color: var(--status-amber-text);  border: 1px solid var(--status-amber-border); }
+.wf-status-red    { background: var(--status-red-bg);    color: var(--status-red-text);    border: 1px solid var(--status-red-border); }
+.wf-status-blue   { background: var(--status-blue-bg);   color: var(--status-blue-text);   border: 1px solid var(--status-blue-border); }
+
+
+/* ── 2. StatusDot ────────────────────────────────────── */
+
+.status-dot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+}
+
+.status-dot-circle {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot-green .status-dot-circle { background: var(--status-green); }
+.dot-amber .status-dot-circle { background: var(--status-amber); }
+.dot-red   .status-dot-circle { background: var(--status-red); }
+.dot-blue  .status-dot-circle { background: var(--status-blue); }
+
+.dot-green .status-dot-icon { color: var(--status-green); }
+.dot-amber .status-dot-icon { color: var(--status-amber); }
+.dot-red   .status-dot-icon { color: var(--status-red); }
+.dot-blue  .status-dot-icon { color: var(--status-blue); }
+
+.dot-green { color: var(--status-green-text); }
+.dot-amber { color: var(--status-amber-text); }
+.dot-red   { color: var(--status-red-text); }
+.dot-blue  { color: var(--status-blue-text); }
+
+
+/* ── 3. PatientStatus ────────────────────────────────── */
+
+.patient-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-2-5) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  transition: border-color var(--transition-fast);
+}
+
+.patient-status:hover {
+  border-color: var(--border-strong);
+}
+
+.ps-left {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ps-green .ps-left  { background: var(--status-green-bg);  color: var(--status-green); border: 1px solid var(--status-green-border); }
+.ps-amber .ps-left  { background: var(--status-amber-bg);  color: var(--status-amber); border: 1px solid var(--status-amber-border); }
+.ps-red   .ps-left  { background: var(--status-red-bg);    color: var(--status-red);   border: 1px solid var(--status-red-border); }
+.ps-blue  .ps-left  { background: var(--status-blue-bg);   color: var(--status-blue);  border: 1px solid var(--status-blue-border); }
+
+.ps-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ps-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ps-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ps-mrn {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+}
+
+.ps-procedure {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.ps-time {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+}
+
+.ps-status-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ps-green .ps-status-indicator { color: var(--status-green); }
+.ps-amber .ps-status-indicator { color: var(--status-amber); }
+.ps-red   .ps-status-indicator { color: var(--status-red); }
+.ps-blue  .ps-status-indicator { color: var(--status-blue); }
+
+.ps-status-text {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+
+/* ── 4. OTStatus ─────────────────────────────────────── */
+
+.ot-status {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.ots-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ots-id {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.ots-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+}
+
+.ots-badge-green { background: var(--status-green-bg); color: var(--status-green-text); border: 1px solid var(--status-green-border); }
+.ots-badge-amber { background: var(--status-amber-bg); color: var(--status-amber-text); border: 1px solid var(--status-amber-border); }
+.ots-badge-red   { background: var(--status-red-bg);   color: var(--status-red-text);   border: 1px solid var(--status-red-border); }
+.ots-badge-blue  { background: var(--status-blue-bg);  color: var(--status-blue-text);  border: 1px solid var(--status-blue-border); }
+
+.ots-specialty {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.ots-case {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-1-5);
+  border-top: 1px solid var(--border-default);
+}
+
+.ots-patient {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ots-procedure {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+
+/* ── 5. CSSDStatus ───────────────────────────────────── */
+
+.cssd-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+}
+
+.css-icon-col {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.css-green .css-icon-col { background: var(--status-green-bg); color: var(--status-green); border: 1px solid var(--status-green-border); }
+.css-amber .css-icon-col { background: var(--status-amber-bg); color: var(--status-amber); border: 1px solid var(--status-amber-border); }
+.css-red   .css-icon-col { background: var(--status-red-bg);   color: var(--status-red);   border: 1px solid var(--status-red-border); }
+.css-blue  .css-icon-col { background: var(--status-blue-bg);  color: var(--status-blue);  border: 1px solid var(--status-blue-border); }
+
+.css-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.css-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.css-pack-id {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.css-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
+
+.css-badge-green { background: var(--status-green-bg); color: var(--status-green-text); }
+.css-badge-amber { background: var(--status-amber-bg); color: var(--status-amber-text); }
+.css-badge-red   { background: var(--status-red-bg);   color: var(--status-red-text); }
+.css-badge-blue  { background: var(--status-blue-bg);  color: var(--status-blue-text); }
+
+.css-type {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.css-location {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+
+/* ── 6. ReadinessGate (3 dots) ───────────────────────── */
+
+.readiness-gate {
+  display: flex;
+  gap: 4px;
+}
+
+.rg-dot {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rg-md .rg-dot {
+  width: 22px;
+  height: 22px;
+}
+
+.rg-sm .rg-dot {
+  width: 18px;
+  height: 18px;
+}
+
+.rg-green { background: var(--status-green-bg); color: var(--status-green); border: 1.5px solid var(--status-green-border); }
+.rg-amber { background: var(--status-amber-bg); color: var(--status-amber); border: 1.5px solid var(--status-amber-border); }
+.rg-red   { background: var(--status-red-bg);   color: var(--status-red);   border: 1.5px solid var(--status-red-border); }
+.rg-blue  { background: var(--status-blue-bg);  color: var(--status-blue);  border: 1.5px solid var(--status-blue-border); }
+
+
+/* ── 7. TimelineEvent ────────────────────────────────── */
+
+.timeline-event {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2-5);
+  min-height: 36px;
+}
+
+.te-time {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  min-width: 42px;
+  text-align: right;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.te-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.te-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.te-dot-green { background: var(--status-green-bg); color: var(--status-green); border: 1.5px solid var(--status-green-border); }
+.te-dot-amber { background: var(--status-amber-bg); color: var(--status-amber); border: 1.5px solid var(--status-amber-border); }
+.te-dot-red   { background: var(--status-red-bg);   color: var(--status-red);   border: 1.5px solid var(--status-red-border); }
+.te-dot-blue  { background: var(--status-blue-bg);  color: var(--status-blue);  border: 1.5px solid var(--status-blue-border); }
+
+.te-line {
+  width: 1.5px;
+  flex: 1;
+  min-height: 16px;
+}
+
+.te-line-green { background: var(--status-green-border); }
+.te-line-amber { background: var(--status-amber-border); }
+.te-line-red   { background: var(--status-red-border); }
+.te-line-blue  { background: var(--status-blue-border); }
+
+.te-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 2px;
+  padding-bottom: var(--space-2-5);
+}
+
+.te-event {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.te-dept {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+
+/* ── 8. AlertItem ────────────────────────────────────── */
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2-5);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  transition: border-color var(--transition-fast);
+}
+
+.alert-item:hover {
+  border-color: var(--border-strong);
+}
+
+.ai-severity {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ai-sev-red   { background: var(--status-red-bg);   color: var(--status-red);   border: 1.5px solid var(--status-red-border); }
+.ai-sev-amber { background: var(--status-amber-bg); color: var(--status-amber); border: 1.5px solid var(--status-amber-border); }
+.ai-sev-blue  { background: var(--status-blue-bg);  color: var(--status-blue);  border: 1.5px solid var(--status-blue-border); }
+
+.ai-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ai-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ai-message {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.ai-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+}
+
+.ai-time {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.ai-action-btn {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--action-primary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  transition: background var(--transition-fast);
+}
+
+.ai-action-btn:hover {
+  background: var(--status-blue-bg);
+}
+
+
+/* ── 9. ProgressBar ──────────────────────────────────── */
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.pb-green { background: var(--status-green); }
+.pb-amber { background: var(--status-amber); }
+.pb-red   { background: var(--status-red); }
+.pb-blue  { background: var(--status-blue); }
+
+.progress-bar-label {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  min-width: 28px;
+  text-align: right;
+}
+
+.pb-label-green { color: var(--status-green-text); }
+.pb-label-amber { color: var(--status-amber-text); }
+.pb-label-red   { color: var(--status-red-text); }
+.pb-label-blue  { color: var(--status-blue-text); }
+
+
+/* ── 10. ActionButton ────────────────────────────────── */
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.ab-sm { font-size: var(--text-xs); padding: 4px 10px; }
+.ab-md { font-size: var(--text-sm); padding: 6px 14px; }
+.ab-lg { font-size: var(--text-base); padding: 8px 18px; }
+
+.ab-primary {
+  background: var(--action-primary);
+  color: var(--text-inverse);
+  border-color: var(--action-primary);
+}
+
+.ab-primary:hover {
+  background: var(--action-primary-hover);
+}
+
+.ab-secondary {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border-color: var(--action-secondary-border);
+}
+
+.ab-secondary:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.ab-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+
+.ab-ghost:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.ab-danger {
+  background: var(--status-red);
+  color: var(--text-inverse);
+  border-color: var(--status-red);
+}
+
+.ab-danger:hover {
+  background: #b91c1c;
+}
+
+.ab-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ab-icon { flex-shrink: 0; }

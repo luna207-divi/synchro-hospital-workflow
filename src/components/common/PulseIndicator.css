@@ -1,0 +1,76 @@
+.ot-pulse-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.ot-pulse-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--pulse-color, var(--state-teal));
+}
+
+.ot-pulse-ping {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: inherit;
+  opacity: 0.6;
+  animation: subtlePulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Sizes */
+.size-sm .ot-pulse-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.size-md .ot-pulse-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.size-lg .ot-pulse-dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* Status variants */
+.status-teal,
+.status-ready {
+  --pulse-color: var(--state-teal);
+}
+
+.status-amber,
+.status-warning {
+  --pulse-color: var(--state-amber);
+}
+
+.status-red,
+.status-critical {
+  --pulse-color: var(--state-red);
+}
+
+.status-blue,
+.status-admissions {
+  --pulse-color: var(--primary-blue);
+}
+
+.status-purple,
+.status-ai {
+  --pulse-color: var(--ai-purple);
+}
+
+.status-slate {
+  --pulse-color: var(--text-muted);
+}
