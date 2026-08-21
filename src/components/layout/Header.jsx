@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -11,12 +11,15 @@ import {
   UserCog,
   LogOut,
   User as UserIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Search,
+  X
 } from 'lucide-react';
 import { NotificationPanel } from '../notifications/NotificationPanel';
 import { UserProfileModal } from '../auth/UserProfileModal';
 import { useRole, ROLES } from '../../context/RoleContext';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkflow } from '../../context/WorkflowContext';
 import { getDashboardForRole } from '../../config/roles';
 import { useNotificationEngine } from '../../hooks/useNotificationEngine';
 import './Header.css';
@@ -48,18 +51,46 @@ export const Header = ({
     dismiss 
   } = useNotificationEngine();
 
+  const workflow = useWorkflow();
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState('Apex Medical Center • Main Pavilion');
   const [showHospitalMenu, setShowHospitalMenu] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(null);
 
   const notifRef = useRef(null);
   const roleRef = useRef(null);
   const hospitalRef = useRef(null);
   const profileRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Search Results
+  const searchResults = useMemo(() => {
+    const q = (globalSearchQuery || '').toLowerCase().trim();
+    if (!q) return [];
+    
+    const matchedPatients = (workflow.patients || []).filter(p => 
+      (p.full_name || '').toLowerCase().includes(q) ||
+      (p.patient_code || '').toLowerCase().includes(q) ||
+      (p.procedure || '').toLowerCase().includes(q)
+    ).slice(0, 4).map(p => ({ type: 'PATIENT', label: `${p.full_name} (${p.patient_code})`, sub: p.procedure, item: p }));
+
+    const matchedPacks = (workflow.cssd_packs || []).filter(pack => 
+      (pack.pack_code || '').toLowerCase().includes(q) ||
+      (pack.pack_type || '').toLowerCase().includes(q)
+    ).slice(0, 3).map(pack => ({ type: 'CSSD_PACK', label: `${pack.pack_code} • ${pack.pack_type}`, sub: `Status: ${pack.status}`, item: pack }));
+
+    const matchedOTs = (workflow.operatingTheatres || []).filter(ot => 
+      (ot.suite_code || '').toLowerCase().includes(q) ||
+      (ot.name || '').toLowerCase().includes(q)
+    ).slice(0, 2).map(ot => ({ type: 'OT', label: `${ot.suite_code} — ${ot.name}`, sub: `Surgeon: ${ot.surgeon}`, item: ot }));
+
+    return [...matchedPatients, ...matchedPacks, ...matchedOTs];
+  }, [globalSearchQuery, workflow]);
 
   // Live clock
   useEffect(() => {
@@ -148,12 +179,12 @@ export const Header = ({
     navigate(targetDashboard);
   };
 
-  const timeStr = currentTime.toLocaleTimeString('en-US', {
+  const timeStr = currentTime ? currentTime.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false
-  });
+  }) : '12:00:00';
 
   const rawName = profile?.display_name || activeRole?.userName || 'Dr. Rajesh Sharma, MD';
   const displayName = rawName.replace(/^Dr\.\s*Dr\./i, 'Dr.').replace(/^Dr\.\s*Dr\s+/i, 'Dr. ');
@@ -197,6 +228,94 @@ export const Header = ({
 
         {/* Right Zone */}
         <div className="header-right">
+          {/* Global Search Bar */}
+          <div style={{ position: 'relative' }} ref={searchRef}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: '20px',
+              padding: '4px 10px',
+              width: '220px'
+            }}>
+              <Search size={14} style={{ color: '#64748b' }} />
+              <input
+                type="text"
+                placeholder="Search patient, MRN, pack, OT..."
+                value={globalSearchQuery}
+                onChange={(e) => {
+                  setGlobalSearchQuery(e.target.value);
+                  setShowSearchResults(true);
+                }}
+                onFocus={() => setShowSearchResults(true)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  outline: 'none',
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-sans)',
+                  width: '100%',
+                  color: 'var(--text-primary)'
+                }}
+              />
+              {globalSearchQuery && (
+                <X size={12} style={{ cursor: 'pointer', color: '#94a3b8' }} onClick={() => setGlobalSearchQuery('')} />
+              )}
+            </div>
+
+            {showSearchResults && searchResults.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                width: '320px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                padding: '8px',
+                zIndex: 1100
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', padding: '4px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                  SEARCH MATCHES ({searchResults.length})
+                </div>
+                {searchResults.map((res, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setShowSearchResults(false);
+                      setGlobalSearchQuery('');
+                      if (res.type === 'PATIENT') navigate('/app/patients');
+                      else if (res.type === 'CSSD_PACK') navigate('/cssd');
+                      else if (res.type === 'OT') navigate('/ot');
+                    }}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backgroundColor: '#f8fafc',
+                      marginTop: '4px'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-navy-head)' }}>{res.label}</div>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>{res.sub}</div>
+                    </div>
+                    <span className="font-mono" style={{ fontSize: '9px', fontWeight: 700, color: '#2563eb', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#eff6ff' }}>
+                      {res.type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Hospital Selector */}
           <div className="hospital-selector-wrapper" ref={hospitalRef}>
             <button
@@ -276,7 +395,7 @@ export const Header = ({
             </div>
 
             {showProfileMenu && (
-              <div className="profile-dropdown-panel">
+              <div className="profile-dropdown-panel font-sans">
                 {/* Profile Header Block */}
                 <div className="profile-panel-header">
                   <div className={`user-avatar avatar-${activeRole?.badgeColor || 'purple'}`}>
@@ -284,7 +403,9 @@ export const Header = ({
                   </div>
                   <div className="profile-panel-info">
                     <span className="profile-panel-name">{displayName}</span>
-                    <span className="profile-panel-role">{displayRole}</span>
+                    <span className="profile-panel-role" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      {(profile?.role || activeRole?.id || 'DOCTOR').toUpperCase()} • {profile?.department || 'Clinical Operations'}
+                    </span>
                   </div>
                 </div>
 
@@ -308,23 +429,11 @@ export const Header = ({
                   className="profile-panel-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    navigate('/app/settings');
+                    alert(`SESSION INFO: Authenticated as ${profile?.email || 'user@synchro.health'} (${profile?.role || 'STAFF'}). Session active.`);
                   }}
                 >
-                  <SettingsIcon size={15} className="panel-item-icon" />
-                  <span>Account Settings</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="profile-panel-item"
-                  onClick={() => {
-                    setShowProfileMenu(false);
-                    setIsNotifPanelOpen(true);
-                  }}
-                >
-                  <Bell size={15} className="panel-item-icon" />
-                  <span>Notification Preferences</span>
+                  <ShieldCheck size={15} className="panel-item-icon" />
+                  <span>Session Information</span>
                 </button>
 
                 <div className="profile-panel-divider" />

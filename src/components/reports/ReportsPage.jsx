@@ -200,21 +200,42 @@ export const ReportsPage = () => {
           insights: '87.5% of scheduled surgical patients have received 100% pre-flight clearance. Marcus Aurel (MRN-1064) requires urgent digital consent sign-off prior to OT-03 transfer.'
         };
 
-      case 'CSSD_STERIL':
+      case 'CSSD_STERIL': {
+        const livePacks = workflow.cssd_packs || [];
+        const sterilePacks = livePacks.filter(p => p.status === 'STERILE').length;
+        const expiredPacks = livePacks.filter(p => p.status === 'EXPIRED' || (p.expiry && new Date(p.expiry) < new Date())).length;
+        const inOtPacks = livePacks.filter(p => p.status === 'IN_OT' || p.status === 'ISSUED').length;
+        const reprocessedPacks = livePacks.filter(p => ['DECONTAMINATION', 'REPROCESSING', 'STERILIZING', 'RETURN_PENDING'].includes(p.status)).length;
+        const emergencyPacks = livePacks.filter(p => p.priority === 'EMERGENCY').length;
+
+        const tableRows = livePacks.slice(0, 10).map(p => {
+          const isExp = p.status === 'EXPIRED' || (p.expiry && new Date(p.expiry) < new Date());
+          return {
+            packId: p.pack_code || p.id,
+            type: p.pack_type,
+            sterilized: p.sterilized_at ? new Date(p.sterilized_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—',
+            expiry: isExp ? 'EXPIRED' : p.expiry ? new Date(p.expiry).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) : '—',
+            location: p.location,
+            assignedOt: p.assigned_ot || 'Unassigned',
+            status: isExp ? 'Expired' : p.status.replace(/_/g, ' '),
+            statusType: isExp ? 'danger' : p.status === 'STERILE' ? 'optimal' : p.status === 'RESERVED' ? 'info' : 'warning'
+          };
+        });
+
         return {
           id: 'CSSD_STERIL',
           docId: 'REP-CSD-2026-08',
           title: 'CSSD Sterilization Quality, Tray Traceability & Expiry Log',
           subtitle: 'Autoclave cycle validation, pack location audit, and shelf-life tracking',
-          abstract: 'Steam autoclave biological spore clearance, pack RFID location audit, and shelf-life tracking for 156 active trays.',
+          abstract: `Steam autoclave biological spore clearance, RFID location audit, and shelf-life tracking across ${livePacks.length} active trays.`,
           kpis: [
-            { label: 'TOTAL ACTIVE PACKS', value: '156 trays', target: 'Trays in active rotation', status: 'normal' },
-            { label: 'STERILITY PASS RATE', value: '100%', target: '0 CFU Spore test pass', status: 'optimal' },
-            { label: 'EXPIRED / QUARANTINED', value: '2 trays', target: '1.2% requiring re-cycle', status: 'danger' },
-            { label: 'OT DISPATCH SPEED', value: '8.4 min', target: 'Average transport time', status: 'optimal' }
+            { label: 'TOTAL PACKS PROCESSED', value: `${livePacks.length} trays`, target: 'Active rotation', status: 'normal' },
+            { label: 'STERILE & AVAILABLE', value: `${sterilePacks} packs`, target: 'Ready for OT dispatch', status: 'optimal' },
+            { label: 'PACKS ISSUED / IN OT', value: `${inOtPacks} packs`, target: 'Active surgical suites', status: 'optimal' },
+            { label: 'EXPIRED / REPROCESSING', value: `${expiredPacks} Expired • ${reprocessedPacks} Decon`, target: `${emergencyPacks} Emergency Kits Active`, status: expiredPacks > 0 ? 'danger' : 'optimal' }
           ],
           tableTitle: 'Sterile Instrument Pack Inventory & Expiry Log',
-          tableSubtitle: 'Complete traceability and sterility status for surgical instrument sets across autoclave bays and OTs',
+          tableSubtitle: 'Complete digital traceability and sterility status for surgical instrument sets across autoclave bays and OTs',
           columns: [
             { key: 'packId', label: 'PACK ID', width: '13%', align: 'left', isMono: true },
             { key: 'type', label: 'INSTRUMENT TYPE', width: '24%', align: 'left', isStrong: true },
@@ -224,14 +245,10 @@ export const ReportsPage = () => {
             { key: 'assignedOt', label: 'ASSIGNED OT', width: '10%', align: 'center', isMono: true },
             { key: 'status', label: 'STATUS', width: '12%', align: 'center', isBadge: true }
           ],
-          rows: [
-            { packId: 'CSSD-40001', type: 'Laparoscopic Cholecystectomy Kit', sterilized: 'Today, 06:00 AM', expiry: 'In 72h', location: 'CSSD Vault B', assignedOt: 'OT-01', status: 'Ready', statusType: 'optimal' },
-            { packId: 'CSSD-40002', type: 'Total Hip Arthroplasty Set', sterilized: 'Today, 07:30 AM', expiry: 'In 70h', location: 'OT-01 Holding Core', assignedOt: 'OT-01', status: 'Ready', statusType: 'optimal' },
-            { packId: 'CSSD-40010', type: 'Arthroscopy Power Tool Pack', sterilized: 'Today, 09:15 AM', expiry: 'In 68h', location: 'Autoclave #01', assignedOt: 'OT-03', status: 'Sterilizing', statusType: 'info' },
-            { packId: 'CSSD-EXP-09', type: 'General Laparotomy Pack #02', sterilized: '01 Aug, 04:00 PM', expiry: 'Expired', location: 'Vault B Quarantine', assignedOt: 'Unassigned', status: 'Quarantined', statusType: 'danger' }
-          ],
-          insights: '100% biological spore indicator compliance verified across Autoclaves #01 and #02. Pack CSSD-EXP-09 was automatically quarantined following shelf-life expiration.'
+          rows: tableRows,
+          insights: `100% biological spore indicator compliance verified across Autoclaves #01–#04. ${expiredPacks} expired packs automatically blocked and quarantined by infection prevention protocol.`
         };
+      }
 
       case 'WORKFLOW_DELAY':
         return {

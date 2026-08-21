@@ -9,6 +9,8 @@ import {
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { useWorkflow } from '../../context/WorkflowContext';
+import { useAuth } from '../../context/AuthContext';
+import { enforcePermission } from '../../config/permissions';
 import './PatientDetailPanel.css';
 
 /**
@@ -18,6 +20,8 @@ import './PatientDetailPanel.css';
  */
 export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatus }) => {
   const workflow = useWorkflow();
+  const { profile } = useAuth();
+  const userRole = profile?.role || 'DOCTOR';
 
   // ── 1. Enrich Patient Demo Data Based on Scenario ───────────────────
   const getEnrichedPatient = (input) => {
@@ -247,7 +251,7 @@ export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatu
 
   if (!pData) return null;
 
-  // ── 3. Dynamic 7-Stage Workflow Progress Definition ────────────────
+  // ── 3. Dynamic 9-Stage Workflow Progress Definition ────────────────
   const STAGES = [
     { key: 'ADMISSION', label: '1. Admission', code: 'ADM', desc: 'Patient intake & bed assignment' },
     { key: 'ASSESSMENT', label: '2. Assessment', code: 'ASS', desc: 'Clinical eval & lab clearance' },
@@ -255,13 +259,17 @@ export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatu
     { key: 'CSSD', label: '4. CSSD Ready', code: 'CSD', desc: 'Sterile pack verification' },
     { key: 'OT', label: '5. OT Suite', code: 'OT', desc: 'Active surgical procedure' },
     { key: 'RECOVERY', label: '6. Recovery', code: 'REC', desc: 'PACU monitoring & vitals' },
-    { key: 'DISCHARGE', label: '7. Discharge', code: 'DIS', desc: 'Final clearance & release' }
+    { key: 'POST_OP', label: '7. Post-Op', code: 'POP', desc: 'Post-op monitoring & ward' },
+    { key: 'DISCHARGE_ASSESS', label: '8. Disch. Assess', code: 'DAS', desc: 'Discharge readiness eval' },
+    { key: 'DISCHARGE', label: '9. Discharge', code: 'DIS', desc: 'Final clearance & release' }
   ];
 
   const getStageIndex = (stageKey) => {
     const s = (stageKey || '').toUpperCase();
-    if (s.includes('DISCHARG')) return 6;
-    if (s.includes('RECOV') || s.includes('POST')) return 5;
+    if (s.includes('DISCHARG') && !s.includes('ASSESS')) return 8;
+    if (s.includes('DISCHARGE_ASSESS') || s.includes('DISCHARGE_READY')) return 7;
+    if (s.includes('POST_OP') || s.includes('READY_FOR_WARD')) return 6;
+    if (s.includes('RECOV')) return 5;
     if (s.includes('SURGERY') || s === 'OT' || s.includes('IN_OT')) return 4;
     if (s.includes('CSSD') || s.includes('STERIL')) return 3;
     if (s.includes('PRE_OP') || s.includes('PREOP') || s.includes('READY')) return 2;
@@ -271,16 +279,29 @@ export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatu
 
   const activeStageIdx = getStageIndex(currentStageKey);
 
+  const [advancementError, setAdvancementError] = useState(null);
+
   // ── 4. Workflow Transition Handlers ───────────────────────────────
   const handleAdvanceWorkflow = () => {
-    if (activeStageIdx < STAGES.length - 1) {
-      const nextStage = STAGES[activeStageIdx + 1].key;
-      setCurrentStageKey(nextStage);
-      if (workflow.changePatientStatus) {
-        workflow.changePatientStatus(pData.id || pData.mrn, nextStage);
+    setAdvancementError(null);
+
+    if (workflow.advancePatientWorkflow) {
+      const res = workflow.advancePatientWorkflow(pData.id || pData.mrn);
+      if (res && res.success) {
+        setCurrentStageKey(res.newStage);
+        if (onUpdateStatus) {
+          onUpdateStatus(pData.id || pData.mrn, res.newStage);
+        }
+      } else if (res && !res.success) {
+        setAdvancementError(res.reason || 'Workflow conditions not satisfied.');
       }
-      if (onUpdateStatus) {
-        onUpdateStatus(pData.id || pData.mrn, nextStage);
+    } else {
+      if (activeStageIdx < STAGES.length - 1) {
+        const nextStage = STAGES[activeStageIdx + 1].key;
+        setCurrentStageKey(nextStage);
+        if (onUpdateStatus) {
+          onUpdateStatus(pData.id || pData.mrn, nextStage);
+        }
       }
     }
   };
@@ -422,22 +443,36 @@ export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatu
               </div>
             )}
 
+            {advancementError && (
+              <div style={{
+                backgroundColor: '#fffbe6',
+                border: '1px solid #fde68a',
+                color: '#92400e',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <AlertTriangle size={16} className="text-amber" />
+                <span><strong>Workflow Cannot Advance:</strong> {advancementError}</span>
+              </div>
+            )}
+
             <div className="tracker-header-row">
               <div className="tracker-title-group">
                 <span className="tracker-main-title font-display">CARE WORKFLOW STAGE PROGRESS</span>
                 <span className="tracker-sub font-sans">
-                  Current Stage: <strong className="text-cyan">{STAGES[activeStageIdx].label}</strong>
+                  Current Stage: <strong className="text-cyan">{STAGES[activeStageIdx].label}</strong> (Stage {activeStageIdx + 1} of 7)
                 </span>
               </div>
 
               <div className="tracker-action-side">
                 {activeStageIdx < STAGES.length - 1 && (
                   <Button size="sm" variant={isEmergency ? 'red' : 'primary'} iconRight={ChevronRight} onClick={handleAdvanceWorkflow}>
-                    {activeStageIdx === 1 ? 'Mark Assessment Complete' :
-                     activeStageIdx === 2 ? 'Mark Pre-Op Cleared' :
-                     activeStageIdx === 3 ? 'Verify & Dispatch CSSD Kit' :
-                     activeStageIdx === 4 ? 'Start Surgical Procedure' :
-                     activeStageIdx === 5 ? 'Complete Recovery' : 'Advance Stage'}
+                    Advance Workflow Event
                   </Button>
                 )}
               </div>
@@ -576,9 +611,125 @@ export const PatientDetailPanel = ({ patient: rawPatient, onClose, onUpdateStatu
                   </div>
                 </div>
 
+                {/* Clinical Clearance & Decision Selector */}
+                <div className="clinical-notes-container font-sans" style={{ marginBottom: '16px', padding: '14px', borderRadius: '10px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldCheck size={16} className="text-teal" />
+                      <span className="font-display font-bold text-navy-head" style={{ fontSize: '12px' }}>DOCTOR CLINICAL CLEARANCE DECISION</span>
+                    </div>
+                    <Badge variant={pData.clinicalClearance === 'CLEARED' ? 'teal' : pData.clinicalClearance === 'CONDITIONALLY_CLEARED' ? 'amber' : 'red'} size="xs">
+                      {pData.clinicalClearance || 'CLEARED FOR SURGERY'}
+                    </Badge>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <Button 
+                      size="xs" 
+                      variant={pData.clinicalClearance === 'CLEARED' || !pData.clinicalClearance ? 'teal' : 'secondary'}
+                      onClick={() => {
+                        if (!enforcePermission(userRole, 'clinical:clearance', 'clinical clearance')) return;
+                        if (workflow.addClinicalNote) {
+                          workflow.addClinicalNote(pData.id || pData.mrn, { author: pData.surgeon, note: 'Clinical Clearance Status: CLEARED FOR SURGERY.' });
+                        }
+                        if (workflow.resolveAlert) {
+                          workflow.resolveAlert(`ALT-HOLD-${pData.mrn}`);
+                        }
+                        alert(`Patient ${pData.name} CLEARED for surgical workflow.`);
+                      }}
+                    >
+                      ✓ CLEARED FOR SURGERY
+                    </Button>
+
+                    <Button 
+                      size="xs" 
+                      variant={pData.clinicalClearance === 'CONDITIONALLY_CLEARED' ? 'amber' : 'secondary'}
+                      onClick={() => {
+                        if (workflow.createAlert) {
+                          workflow.createAlert({
+                            id: `ALT-HOLD-${pData.mrn}`,
+                            severity: 'Warning',
+                            alert_type: 'CLINICAL_HOLD',
+                            title: `Clinical hold placed on ${pData.name}`,
+                            department: 'Doctors',
+                            patientName: pData.name,
+                            patientId: pData.mrn,
+                            relatedEntity: `${pData.name} (${pData.mrn})`,
+                            reason: 'Conditioned clearance: Additional lab / imaging investigation required before OT transfer.'
+                          });
+                        }
+                        alert(`Patient ${pData.name} marked CONDITIONALLY CLEARED. Clinical Hold alert triggered.`);
+                      }}
+                    >
+                      ⚠ CONDITIONALLY CLEARED
+                    </Button>
+
+                    <Button 
+                      size="xs" 
+                      variant={pData.clinicalClearance === 'NOT_CLEARED' ? 'danger' : 'secondary'}
+                      onClick={() => {
+                        if (workflow.createAlert) {
+                          workflow.createAlert({
+                            id: `ALT-HOLD-${pData.mrn}`,
+                            severity: 'Critical',
+                            alert_type: 'CLINICAL_HOLD',
+                            title: `Surgical Hold: ${pData.name} NOT CLEARED`,
+                            department: 'Doctors',
+                            patientName: pData.name,
+                            patientId: pData.mrn,
+                            relatedEntity: `${pData.name} (${pData.mrn})`,
+                            reason: 'Patient clinically held by consultant due to unstable vitals / secondary medical risk.'
+                          });
+                        }
+                        alert(`Patient ${pData.name} marked NOT CLEARED. Surgical workflow PAUSED.`);
+                      }}
+                    >
+                      ⛔ NOT CLEARED (CLINICAL HOLD)
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Nursing Pre-Op Handoff Confirmation Box */}
+                <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileCheck2 size={16} className="text-purple" />
+                      <span className="font-display font-bold text-navy-head" style={{ fontSize: '12px' }}>NURSING PRE-OP HANDOFF TO OT</span>
+                    </div>
+                    <Badge variant="purple" size="xs">NURSING CHECKLIST COMPLETE</Badge>
+                  </div>
+
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                    Checks: Identity Verified ✓ • Consent Signed ✓ • Vitals Stable ✓ • IV Access ✓ • CSSD Pack Verified ✓
+                  </div>
+
+                  <Button 
+                    size="sm" 
+                    variant="primary" 
+                    icon={Send} 
+                    onClick={() => {
+                      // Check CSSD pack sterility
+                      if (pData.cssdStatus === 'EXPIRED') {
+                        alert(`HANDOFF BLOCKED: Required sterile pack ${pData.cssdPackId} is expired. Send for reprocessing.`);
+                        return;
+                      }
+                      if (pData.clinicalClearance === 'NOT_CLEARED') {
+                        alert(`HANDOFF BLOCKED: Patient ${pData.name} is on Clinical Hold.`);
+                        return;
+                      }
+                      if (workflow.advancePatientWorkflow) {
+                        workflow.advancePatientWorkflow(pData.id || pData.mrn);
+                      }
+                      alert(`NURSING HANDOFF CONFIRMED: Patient ${pData.name} transferred into ${pData.otSuite}. OT and Front Desk updated.`);
+                    }}
+                  >
+                    CONFIRM NURSING HANDOFF TO OT
+                  </Button>
+                </div>
+
                 {/* Clinical Notes Stream */}
                 <div className="clinical-notes-container font-sans">
-                  <span className="notes-section-label font-mono">CLINICAL NOTES LOG ({localNotes.length})</span>
+                  <span className="notes-section-label font-mono font-bold">CLINICAL & NURSING NOTES LOG ({localNotes.length})</span>
                   
                   <div className="notes-list-box">
                     {localNotes.map((n) => (

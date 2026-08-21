@@ -26,6 +26,7 @@ import { AlertsPage } from './components/alerts/AlertsPage';
 import { PatientsPage } from './components/patients/PatientsPage';
 import { NotificationHistoryPage } from './components/notifications/NotificationHistoryPage';
 import { AdminPortal } from './components/portal/AdminPortal';
+import { TheatresPage } from './components/theatres/TheatresPage';
 
 export const router = createBrowserRouter([
   /* ── Public Routes ──────────────────────────────────────── */
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
   },
   {
     path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/signin',
     element: <LoginPage />,
   },
 
@@ -139,18 +144,44 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/frontdesk" replace /> }
     ]
   },
+  // 6. CSSD Dashboard (/cssd)
   {
     path: '/cssd',
-    element: <ProtectedRoute allowedRoles={['NURSING', 'NURSE', 'CSSD_MANAGER', 'ADMIN', 'HOSPITAL_ADMIN']} />,
+    element: <ProtectedRoute allowedRoles={['CSSD', 'CSSD_MANAGER', 'ADMIN', 'HOSPITAL_ADMIN']} />,
     children: [
-      { index: true, element: <Navigate to="/nursing" replace /> }
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <CSSDPage /> }
+        ]
+      }
     ]
   },
+
+  // 7. OT Dashboard (/ot & /theatres)
   {
     path: '/ot',
-    element: <ProtectedRoute allowedRoles={['DOCTOR', 'SURGEON', 'OT_MANAGER', 'ADMIN', 'HOSPITAL_ADMIN']} />,
+    element: <ProtectedRoute allowedRoles={['OT_MANAGER', 'OT', 'DOCTOR', 'SURGEON', 'ADMIN', 'HOSPITAL_ADMIN']} />,
     children: [
-      { index: true, element: <Navigate to="/doctor" replace /> }
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <TheatresPage /> }
+        ]
+      }
+    ]
+  },
+
+  {
+    path: '/theatres',
+    element: <ProtectedRoute allowedRoles={['OT_MANAGER', 'OT', 'DOCTOR', 'SURGEON', 'ADMIN', 'HOSPITAL_ADMIN']} />,
+    children: [
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <TheatresPage /> }
+        ]
+      }
     ]
   },
 

@@ -10,18 +10,24 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Nav items allowed per role
 const ROLE_NAV_PERMISSIONS = {
-  ADMIN:      ['flow-board', 'live-flow', 'readiness', 'instruments', 'alerts', 'analytics', 'reports', 'settings'],
-  DOCTOR:     ['flow-board', 'live-flow', 'readiness', 'alerts', 'analytics', 'reports'],
-  NURSING:    ['flow-board', 'readiness', 'instruments', 'alerts'],
-  FRONT_DESK: ['flow-board', 'readiness', 'alerts'],
-  BILLING:    ['analytics', 'reports', 'alerts'],
-  // Aliases
-  HOSPITAL_ADMIN: ['flow-board', 'live-flow', 'readiness', 'instruments', 'alerts', 'analytics', 'reports', 'settings'],
-  OT_MANAGER:     ['flow-board', 'live-flow', 'readiness', 'instruments', 'alerts', 'analytics', 'reports'],
-  SURGEON:        ['flow-board', 'live-flow', 'readiness', 'alerts', 'analytics', 'reports'],
-  CSSD_MANAGER:   ['flow-board', 'readiness', 'instruments', 'alerts'],
-  NURSE:          ['flow-board', 'readiness', 'instruments', 'alerts'],
-  ADMISSIONS_STAFF: ['flow-board', 'readiness', 'alerts'],
+  ADMIN:        ['flow-board', 'frontdesk', 'live-flow', 'patients', 'readiness', 'instruments', 'alerts', 'analytics', 'reports', 'settings'],
+  HOSPITAL_ADMIN: ['flow-board', 'frontdesk', 'live-flow', 'patients', 'readiness', 'instruments', 'alerts', 'analytics', 'reports', 'settings'],
+
+  FRONT_DESK:   ['frontdesk', 'patients', 'alerts'],
+  FRONTDESK:    ['frontdesk', 'patients', 'alerts'],
+  ADMISSIONS_STAFF: ['frontdesk', 'patients', 'alerts'],
+
+  DOCTOR:       ['flow-board', 'live-flow', 'patients', 'alerts', 'reports'],
+  SURGEON:      ['flow-board', 'live-flow', 'patients', 'alerts', 'reports'],
+
+  NURSE:        ['nursing', 'flow-board', 'readiness', 'alerts'],
+  NURSING:      ['nursing', 'flow-board', 'readiness', 'alerts'],
+
+  CSSD:         ['instruments', 'alerts', 'reports'],
+  CSSD_MANAGER: ['instruments', 'alerts', 'reports'],
+
+  OT_MANAGER:   ['flow-board', 'readiness', 'instruments', 'alerts', 'reports'],
+  BILLING:      ['analytics', 'reports', 'alerts'],
 };
 
 // Legacy ROLES object kept for backward compatibility with existing components

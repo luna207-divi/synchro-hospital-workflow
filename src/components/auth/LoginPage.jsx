@@ -26,19 +26,21 @@ import './LoginPage.css';
    ============================================================ */
 
 const DEMO_ACCOUNTS = [
-  { label: 'Front Desk', email: 'frontdesk@synchro.demo', role: 'FRONT_DESK', color: '#0284c7' },
-  { label: 'Nursing', email: 'nursing@synchro.demo', role: 'NURSING', color: '#0d9488' },
-  { label: 'Doctor', email: 'doctor@synchro.demo', role: 'DOCTOR', color: '#4f46e5' },
-  { label: 'Billing', email: 'billing@synchro.demo', role: 'BILLING', color: '#059669' },
-  { label: 'Admin', email: 'admin@synchro.demo', role: 'ADMIN', color: '#7c3aed' },
+  { label: 'Admin', email: 'admin@synchro.health', pass: 'Admin@123', role: 'ADMIN', color: '#7c3aed' },
+  { label: 'Front Desk', email: 'frontdesk@synchro.health', pass: 'Front@123', role: 'FRONT_DESK', color: '#0284c7' },
+  { label: 'Doctor', email: 'doctor@synchro.health', pass: 'Doctor@123', role: 'DOCTOR', color: '#4f46e5' },
+  { label: 'Nurse', email: 'nurse@synchro.health', pass: 'Nurse@123', role: 'NURSE', color: '#0d9488' },
+  { label: 'CSSD', email: 'cssd@synchro.health', pass: 'CSSD@123', role: 'CSSD', color: '#059669' },
+  { label: 'OT Manager', email: 'ot@synchro.health', pass: 'OT@123', role: 'OT_MANAGER', color: '#dc2626' },
 ];
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { signIn, isAuthenticated, profile, resetPassword } = useAuth();
+  const { signIn, signOut, isAuthenticated, profile, resetPassword } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,13 +50,15 @@ export const LoginPage = () => {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // If user is already authenticated, redirect to their role dashboard
-  useEffect(() => {
-    if (isAuthenticated && profile?.role) {
-      const targetDashboard = getDashboardForRole(profile.role);
-      navigate(targetDashboard, { replace: true });
+  // Synchronize designation dropdown selection with demo email/pass
+  const handleRoleSelectChange = (roleValue) => {
+    setSelectedRole(roleValue);
+    const matchedAcc = DEMO_ACCOUNTS.find(a => a.role === roleValue);
+    if (matchedAcc) {
+      setEmail(matchedAcc.email);
+      setPassword(matchedAcc.pass);
     }
-  }, [isAuthenticated, profile, navigate]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,7 +89,7 @@ export const LoginPage = () => {
 
   const fillDemoAccount = (acc) => {
     setEmail(acc.email);
-    setPassword('synchro123');
+    setPassword(acc.pass || 'synchro123');
     setError(null);
   };
 
@@ -107,7 +111,7 @@ export const LoginPage = () => {
       {/* ── LEFT SIDE: Animated Medical Illustration & Branding ── */}
       <div className="login-left-side">
         <div className="login-brand-header">
-          <SynchroLogo size="md" variant="light" />
+          <SynchroLogo size="lg" variant="dark" showTagline={true} onClick={() => navigate('/')} />
         </div>
 
         <div className="login-left-content">
@@ -141,8 +145,39 @@ export const LoginPage = () => {
         <div className="login-card-panel">
           <div className="login-panel-header">
             <h2 className="login-panel-title">Sign in to Synchro</h2>
-            <p className="login-panel-sub">Enter your credentials to access your workspace.</p>
+            <p className="login-panel-sub">Select your designation or enter credentials to access your workspace.</p>
           </div>
+
+          {/* Active Session Banner Handler */}
+          {isAuthenticated && (
+            <div style={{
+              margin: '0 0 16px 0',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              color: '#166534',
+              fontSize: '12px'
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={14} style={{ color: '#16a34a' }} />
+                <span>Active Session: {profile?.display_name || 'Staff Member'} ({profile?.role || 'User'})</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <Button size="sm" variant="primary" icon={ArrowRight} onClick={() => {
+                  const targetDashboard = getDashboardForRole(profile?.role);
+                  navigate(targetDashboard, { replace: true });
+                }}>
+                  Continue to Dashboard
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => {
+                  if (signOut) signOut();
+                }}>
+                  Switch Account
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Quick Demo Accounts Selection Helper */}
           <div style={{
@@ -165,14 +200,17 @@ export const LoginPage = () => {
               color: 'var(--text-muted, #64748b)'
             }}>
               <UserCheck size={13} style={{ color: 'var(--primary-blue, #2563eb)' }} />
-              <span>Demo Accounts (Select Role)</span>
+              <span>Quick Select Demo Role</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {DEMO_ACCOUNTS.map((acc) => (
                 <button
                   key={acc.role}
                   type="button"
-                  onClick={() => fillDemoAccount(acc)}
+                  onClick={() => {
+                    fillDemoAccount(acc);
+                    setSelectedRole(acc.role);
+                  }}
                   style={{
                     padding: '4px 8px',
                     borderRadius: '6px',
@@ -209,6 +247,24 @@ export const LoginPage = () => {
 
           {/* Single Login Form */}
           <form className="login-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Designation / Role Selection</label>
+              <select 
+                className="form-input" 
+                value={selectedRole} 
+                onChange={(e) => handleRoleSelectChange(e.target.value)}
+                style={{ cursor: 'pointer', backgroundColor: '#ffffff' }}
+              >
+                <option value="">-- Select Designation / Role --</option>
+                <option value="FRONT_DESK">Front Desk / Patient Intake & Admissions</option>
+                <option value="DOCTOR">Doctor / Clinical Operations Lead</option>
+                <option value="NURSE">Nursing & PACU Recovery Lead</option>
+                <option value="CSSD">CSSD Sterilization & Inventory Lead</option>
+                <option value="OT_MANAGER">Operating Theatre Coordinator / OT Lead</option>
+                <option value="ADMIN">Hospital Administrator (Executive Command)</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Email Address or Employee ID</label>
               <input 
@@ -254,7 +310,7 @@ export const LoginPage = () => {
               className="login-submit-btn"
               disabled={isLoading}
             >
-              {isLoading ? 'Authenticating...' : 'Sign In to Workspace'}
+              {isLoading ? 'Authenticating Role...' : 'SIGN IN TO WORKSPACE'}
             </Button>
           </form>
 

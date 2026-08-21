@@ -18,43 +18,118 @@ import {
   ArrowRight,
   Flame,
   Radio,
-  FileCheck
+  FileCheck,
+  ChevronRight,
+  Play,
+  Fingerprint,
+  QrCode,
+  Activity
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import './PackDetailDrawer.css';
 
 /**
- * Detailed CSSD Instrument Pack Lifecycle Drawer
- * Displays the complete 8-stage lifecycle, autoclave parameters, sterility validation certificate,
- * expired safety blocking banner, and interactive OT suite assignment.
+ * CSSD Pack Detail Drawer — Full Lifecycle, Digital Identity, Verification & Actions
  */
-export const PackDetailDrawer = ({ pack, onClose, onAssignOT, onQuarantine }) => {
-  const [selectedSuite, setSelectedSuite] = useState(pack?.assignedOT !== 'Unassigned' ? pack?.assignedOT : 'OT-01');
-  const [assignSuccess, setAssignSuccess] = useState(false);
+export const PackDetailDrawer = ({ pack, onClose, workflow }) => {
+  const [verifyStep, setVerifyStep] = useState(0);
+  const [verifying, setVerifying] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
 
   if (!pack) return null;
 
-  const isExpired = pack.sterilizationStatus === 'Expired' || pack.isExpired;
+  const isExpired = pack.computedStatus === 'EXPIRED' || pack.status === 'EXPIRED' || (pack.expiry && new Date(pack.expiry) < new Date());
+  const isEmergency = pack.priority === 'EMERGENCY';
 
-  const lifecycleStages = [
-    { name: 'Collected', status: 'done', time: 'Aug 09 • 04:30 PM', by: 'CSSD Logistics Porter', location: 'OT Clean Core 2' },
-    { name: 'Cleaning', status: 'done', time: 'Aug 09 • 05:15 PM', by: 'Enzymatic Ultrasonic Bath #3', location: 'Decontamination Zone' },
-    { name: 'Sterilization', status: isExpired ? 'done' : 'done', time: `${pack.sterilizedOn} • 06:45 AM`, by: 'Pre-Vacuum Autoclave #02 (134°C Steam)', location: 'Sterilization Core' },
-    { name: 'Quality Check', status: isExpired ? 'flagged' : 'done', time: `${pack.sterilizedOn} • 07:40 AM`, by: 'Dual Biological Spore Test Cleared', location: 'Sterile Inspection Desk' },
-    { name: 'Sterile Storage', status: isExpired ? 'flagged' : pack.currentStageIdx >= 4 ? 'current' : 'upcoming', time: `${pack.sterilizedOn} • 08:00 AM`, by: 'Barcoded Shelf Location: Storage A', location: pack.location },
-    { name: 'Assigned to OT', status: isExpired ? 'blocked' : pack.assignedOT !== 'Unassigned' ? 'done' : 'upcoming', time: pack.assignedOT !== 'Unassigned' ? 'Today • 09:30 AM' : 'Pending Allocation', by: pack.assignedOT !== 'Unassigned' ? `Assigned to ${pack.assignedOT}` : 'Awaiting Surgeon Request', location: pack.assignedOT !== 'Unassigned' ? pack.assignedOT : 'None' },
-    { name: 'Used', status: 'upcoming', time: 'Scheduled for Case', by: 'Surgical Team In Room', location: pack.assignedOT !== 'Unassigned' ? pack.assignedOT : 'OT Core' },
-    { name: 'Returned', status: 'upcoming', time: 'Post-Op Return', by: 'Closed Return Cart', location: 'Decon Intake' }
-  ];
+  const getExpiryHours = () => {
+    if (!pack.expiry) return null;
+    const diff = new Date(pack.expiry) - new Date();
+    return Math.round(diff / 3600000);
+  };
+  const expiryHrs = getExpiryHours();
 
-  const handleAssign = () => {
-    if (isExpired) return;
-    setAssignSuccess(true);
-    if (onAssignOT) {
-      onAssignOT(pack.id, selectedSuite);
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+  const fmtDateFull = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Verification simulation
+  const handleVerify = () => {
+    if (isExpired) {
+      setActionMessage({ type: 'error', text: 'VERIFICATION FAILED: Pack has expired. Cannot verify.' });
+      return;
+    }
+    setVerifying(true);
+    setVerifyStep(1);
+    const steps = [1, 2, 3, 4, 5];
+    steps.forEach((s, i) => {
+      setTimeout(() => {
+        setVerifyStep(s);
+        if (s === 5) {
+          setVerifying(false);
+          if (workflow?.verifyPack) workflow.verifyPack(pack.id);
+          setActionMessage({ type: 'success', text: `Pack ${pack.pack_code} verified successfully. All checks passed.` });
+        }
+      }, (i + 1) * 500);
+    });
+  };
+
+  // Action handlers
+  const handleReserve = () => {
+    if (!workflow?.reservePackForPatient) return;
+    const res = workflow.reservePackForPatient(pack.id, pack.assigned_patient || 'Ananya Rao', pack.assigned_patient_code || 'P-1042');
+    if (res.success) {
+      setActionMessage({ type: 'success', text: `Pack ${pack.pack_code} reserved for ${pack.assigned_patient || 'patient'}.` });
+    } else {
+      setActionMessage({ type: 'error', text: res.reason });
     }
   };
+
+  const handleIssue = () => {
+    if (isExpired) {
+      setActionMessage({ type: 'error', text: 'BLOCKED: Expired pack cannot be issued to OT.' });
+      return;
+    }
+    if (workflow?.issuePackToOT) workflow.issuePackToOT(pack.id, pack.assigned_ot || 'OT-02');
+    setActionMessage({ type: 'success', text: `Pack ${pack.pack_code} issued to ${pack.assigned_ot || 'OT-02'}.` });
+  };
+
+  const handleMarkReturned = () => {
+    if (workflow?.markPackReturned) workflow.markPackReturned(pack.id);
+    setActionMessage({ type: 'success', text: `Pack ${pack.pack_code} marked as returned to CSSD.` });
+  };
+
+  const handleAdvanceLifecycle = () => {
+    if (workflow?.advancePackLifecycle) {
+      const res = workflow.advancePackLifecycle(pack.id);
+      if (res.success) {
+        setActionMessage({ type: 'success', text: `Pack ${res.packCode} advanced to ${res.newStatus.replace(/_/g, ' ')}.` });
+      }
+    }
+  };
+
+  const handleQuarantine = () => {
+    if (workflow?.advancePackLifecycle) {
+      // For expired, jump to DECONTAMINATION
+      if (workflow.markPackReturned) workflow.markPackReturned(pack.id);
+      setActionMessage({ type: 'success', text: `Pack ${pack.pack_code} quarantined and routed for reprocessing.` });
+    }
+  };
+
+  const verifyLabels = [
+    'Digital Identity',
+    'Sterilization Cycle',
+    'Sterility Indicators',
+    'Expiry Validation',
+    'Pack Integrity'
+  ];
 
   return (
     <div className="ot-pack-drawer-backdrop" onClick={onClose}>
@@ -62,9 +137,16 @@ export const PackDetailDrawer = ({ pack, onClose, onAssignOT, onQuarantine }) =>
         {/* Header */}
         <div className="pack-drawer-header">
           <div className="pack-header-title-group">
-            <div className="pack-id-pill font-mono">{pack.id}</div>
+            <div className="pack-id-pill font-mono">{pack.pack_code}</div>
             <span className="pack-header-sep">•</span>
-            <span className="pack-rfid-chip font-mono">RFID #99824-A</span>
+            <span className="pack-rfid-chip font-mono">
+              <Radio size={10} style={{ marginRight: '3px' }} />
+              {pack.rfid}
+            </span>
+            <span className="pack-rfid-chip font-mono" style={{ marginLeft: '4px' }}>
+              <QrCode size={10} style={{ marginRight: '3px' }} />
+              {pack.qr}
+            </span>
           </div>
           <button className="pack-drawer-close" onClick={onClose} aria-label="Close drawer" type="button">
             <X size={18} />
@@ -73,140 +155,253 @@ export const PackDetailDrawer = ({ pack, onClose, onAssignOT, onQuarantine }) =>
 
         {/* Body */}
         <div className="pack-drawer-body">
-          {/* Pack Hero Info Card */}
+          {/* Action Messages */}
+          {actionMessage && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: actionMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
+              color: actionMessage.type === 'success' ? '#15803d' : '#b91c1c',
+              border: `1px solid ${actionMessage.type === 'success' ? '#86efac' : '#fca5a5'}`,
+              marginBottom: '12px'
+            }}>
+              {actionMessage.type === 'success' ? <CheckCircle2 size={14} /> : <AlertOctagon size={14} />}
+              <span>{actionMessage.text}</span>
+              <button onClick={() => setActionMessage(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}>
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
+          {/* Pack Hero Card */}
           <div className="pack-hero-card">
             <div className="pack-hero-main">
               <div className="pack-icon-wrapper">
-                <PackageCheck size={22} className="text-teal" />
+                {isEmergency ? <Flame size={22} className="text-red" /> : <PackageCheck size={22} className="text-teal" />}
               </div>
               <div className="pack-hero-details">
                 <div className="pack-title-line">
-                  <h2 className="pack-type-name font-display">{pack.type}</h2>
-                  <span className={`pack-status-badge badge-${pack.sterilizationStatus.toLowerCase().replace(' ', '-')}`}>
-                    {pack.sterilizationStatus}
+                  <h2 className="pack-type-name font-display">{pack.pack_type}</h2>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    padding: '3px 10px', borderRadius: '10px', fontSize: '10px', fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    backgroundColor: isExpired ? '#fee2e2' : pack.status === 'STERILE' ? '#dcfce7' : pack.status === 'RESERVED' ? '#dbeafe' : pack.status === 'IN_OT' ? '#fef3c7' : '#f1f5f9',
+                    color: isExpired ? '#b91c1c' : pack.status === 'STERILE' ? '#15803d' : pack.status === 'RESERVED' ? '#1e40af' : pack.status === 'IN_OT' ? '#b45309' : '#475569'
+                  }}>
+                    {isExpired && <AlertOctagon size={10} />}
+                    {pack.status === 'STERILE' && !isExpired && <CheckCircle2 size={10} />}
+                    {(isExpired ? 'EXPIRED' : pack.status).replace(/_/g, ' ')}
                   </span>
                 </div>
                 <div className="pack-location-row font-mono">
-                  <span><MapPin size={11} className="text-muted" /> Location: <strong>{pack.location}</strong></span>
+                  <span><MapPin size={11} className="text-muted" /> {pack.location}</span>
                   <span>•</span>
-                  <span>Assigned: <strong>{pack.assignedOT}</strong></span>
+                  <span>Specialty: <strong>{pack.specialty}</strong></span>
+                  <span>•</span>
+                  <span>{pack.instrument_count} instruments</span>
                 </div>
               </div>
             </div>
 
-            {/* Timing & Validity Strip */}
+            {/* Timing Strip */}
             <div className="pack-validity-strip font-mono">
               <div className="validity-col">
-                <span className="v-label">STERILIZED ON</span>
-                <span className="v-val">{pack.sterilizedOn}</span>
+                <span className="v-label">STERILIZED</span>
+                <span className="v-val">{fmtDateFull(pack.sterilized_at)}</span>
               </div>
               <div className="validity-col">
                 <span className="v-label">STERILE EXPIRY</span>
-                <span className={`v-val font-bold ${isExpired ? 'text-red' : 'text-primary'}`}>
-                  {pack.expiry}
+                <span className={`v-val font-bold ${isExpired ? 'text-red' : expiryHrs !== null && expiryHrs <= 24 ? 'text-amber' : 'text-primary'}`}>
+                  {fmtDateFull(pack.expiry)}
+                  {expiryHrs !== null && !isExpired && expiryHrs <= 48 && (
+                    <span style={{ fontSize: '10px', marginLeft: '6px' }}>({expiryHrs}h left)</span>
+                  )}
+                  {isExpired && (
+                    <span style={{ fontSize: '10px', marginLeft: '6px' }}>⚠ EXPIRED</span>
+                  )}
                 </span>
               </div>
               <div className="validity-col">
-                <span className="v-label">CYCLE NUMBER</span>
-                <span className="v-val">CYCLE #284-A</span>
+                <span className="v-label">CYCLE</span>
+                <span className="v-val">{pack.cycle || '—'}</span>
+              </div>
+              <div className="validity-col">
+                <span className="v-label">OPERATOR</span>
+                <span className="v-val">{pack.operator || '—'}</span>
               </div>
             </div>
           </div>
 
-          {/* CRITICAL EXPIRED SAFETY WARNING BANNER (Strong, Professional Block) */}
+          {/* EXPIRED SAFETY BLOCK */}
           {isExpired && (
             <div className="expired-pack-blocked-banner">
               <div className="blocked-header">
                 <AlertOctagon size={20} className="blocked-icon" />
                 <div className="blocked-title-group">
-                  <h3 className="blocked-headline font-display">PACK BLOCKED</h3>
-                  <p className="blocked-subtitle font-mono">Sterile validity expired.</p>
+                  <h3 className="blocked-headline font-display">PACK BLOCKED — EXPIRED</h3>
+                  <p className="blocked-subtitle font-mono">Cannot be issued to any patient or OT.</p>
                 </div>
               </div>
               <div className="blocked-desc">
-                This instrument pack exceeded its maximum 72-hour validated sterile shelf-life. Dispatch to any operating theatre is strictly locked by hospital infection prevention protocol.
+                This instrument pack has exceeded its validated sterile shelf-life. OT dispatch and patient assignment are strictly locked by hospital infection prevention protocol.
               </div>
               <div className="blocked-action-row">
-                <Button 
-                  size="sm" 
-                  variant="danger" 
-                  icon={RotateCcw}
-                  onClick={() => {
-                    alert(`Tray ${pack.id} quarantined and routed to Decontamination Intake for re-sterilization.`);
-                    if (onQuarantine) onQuarantine(pack.id);
-                  }}
-                >
-                  Quarantine & Reprocess Tray
+                <span className="font-mono" style={{ fontSize: '11px', color: '#92400e' }}>Required: Send for reprocessing →</span>
+                <Button size="sm" variant="danger" icon={RotateCcw} onClick={handleQuarantine}>
+                  Quarantine & Reprocess
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Autoclave & Sterility Physical Validation */}
+          {/* Patient Assignment */}
+          {pack.assigned_patient && (
+            <div className="pack-section" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '14px 16px' }}>
+              <h4 className="pack-section-title" style={{ marginBottom: '8px' }}>
+                <Fingerprint size={14} className="text-blue" />
+                <span>Patient Assignment</span>
+              </h4>
+              <div className="autoclave-params-grid font-mono">
+                <div className="param-item">
+                  <span className="param-label">PATIENT</span>
+                  <span className="param-val font-bold">{pack.assigned_patient}</span>
+                </div>
+                <div className="param-item">
+                  <span className="param-label">MRN</span>
+                  <span className="param-val font-bold">{pack.assigned_patient_code}</span>
+                </div>
+                <div className="param-item">
+                  <span className="param-label">ASSIGNED OT</span>
+                  <span className="param-val font-bold text-cyan">{pack.assigned_ot}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sterilization Biological Parameters */}
           <div className="pack-section">
             <h4 className="pack-section-title">
               <FileCheck size={14} className="text-teal" />
-              <span>Sterilization Biological Parameters</span>
+              <span>Sterilization Parameters & Verification</span>
             </h4>
 
             <div className="autoclave-params-grid font-mono">
               <div className="param-item">
                 <span className="param-label">METHOD</span>
-                <span className="param-val font-bold">134°C Steam (Pre-Vac)</span>
+                <span className="param-val font-bold">{pack.sterilization_method || '134°C Steam (Pre-Vac)'}</span>
               </div>
               <div className="param-item">
                 <span className="param-label">HOLD TIME</span>
                 <span className="param-val">4.5 mins @ 3.1 bar</span>
               </div>
               <div className="param-item">
-                <span className="param-label">SPORE TEST</span>
-                <span className={`param-val ${isExpired ? 'text-red font-bold' : 'text-teal font-bold'}`}>
-                  {isExpired ? 'VALIDITY EXPIRED' : 'PASSED (0 CFU)'}
+                <span className="param-label">BIOLOGICAL TEST</span>
+                <span className={`param-val font-bold ${pack.verification?.biological ? 'text-teal' : 'text-amber'}`}>
+                  {pack.verification?.biological ? '✓ PASSED (0 CFU)' : '○ Pending'}
                 </span>
               </div>
               <div className="param-item">
-                <span className="param-label">OPERATOR ID</span>
-                <span className="param-val">TECH-409 (M. Vance)</span>
+                <span className="param-label">CHEMICAL TEST</span>
+                <span className={`param-val font-bold ${pack.verification?.chemical ? 'text-teal' : 'text-amber'}`}>
+                  {pack.verification?.chemical ? '✓ PASSED' : '○ Pending'}
+                </span>
+              </div>
+              <div className="param-item">
+                <span className="param-label">PACK INTEGRITY</span>
+                <span className={`param-val font-bold ${pack.verification?.integrity ? 'text-teal' : isExpired ? 'text-red' : 'text-amber'}`}>
+                  {pack.verification?.integrity ? '✓ Sealed' : isExpired ? '✗ Compromised' : '○ Pending'}
+                </span>
+              </div>
+              <div className="param-item">
+                <span className="param-label">VERIFIED AT</span>
+                <span className="param-val">{pack.verification?.verifiedAt ? `${fmtDateFull(pack.verification.verifiedAt)} ${fmtTime(pack.verification.verifiedAt)}` : '—'}</span>
               </div>
             </div>
           </div>
 
-          {/* Complete 8-Stage Lifecycle Timeline */}
+          {/* Digital Verification Steps */}
+          {!isExpired && (
+            <div className="pack-section">
+              <h4 className="pack-section-title">
+                <ShieldCheck size={14} className="text-blue" />
+                <span>Digital Pack Verification</span>
+              </h4>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                {verifyLabels.map((label, i) => {
+                  const step = i + 1;
+                  const done = verifyStep >= step || pack.verification?.verified;
+                  const active = verifyStep === step && verifying;
+                  return (
+                    <div key={label} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '6px 10px', borderRadius: '6px',
+                      backgroundColor: done ? '#f0fdf4' : active ? '#fffbeb' : '#f8fafc',
+                      border: `1px solid ${done ? '#bbf7d0' : active ? '#fde68a' : '#e2e8f0'}`,
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <span style={{ width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, backgroundColor: done ? '#dcfce7' : active ? '#fef3c7' : '#f1f5f9', color: done ? '#15803d' : active ? '#b45309' : '#94a3b8' }}>
+                        {done ? <CheckCircle2 size={12} /> : active ? <Clock size={12} /> : step}
+                      </span>
+                      <span className="font-mono" style={{ fontSize: '11px', fontWeight: 600, color: done ? '#15803d' : active ? '#b45309' : '#64748b' }}>
+                        {label}
+                      </span>
+                      <span className="font-mono" style={{ marginLeft: 'auto', fontSize: '10px', color: done ? '#16a34a' : '#94a3b8' }}>
+                        {done ? '✓ Verified' : active ? 'Checking...' : 'Pending'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!pack.verification?.verified && (
+                <Button size="sm" variant="teal" icon={ShieldCheck} onClick={handleVerify} disabled={verifying}>
+                  {verifying ? 'Verifying...' : 'Verify Pack'}
+                </Button>
+              )}
+              {pack.verification?.verified && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                  <CheckCircle2 size={14} style={{ color: '#16a34a' }} />
+                  <span className="font-mono" style={{ fontSize: '11px', fontWeight: 700, color: '#15803d' }}>PACK VERIFIED — All checks passed</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Pack Lifecycle Timeline */}
           <div className="pack-section">
             <h4 className="pack-section-title">
               <Clock size={14} className="text-blue" />
-              <span>Complete 8-Stage Instrument Lifecycle</span>
+              <span>Pack Lifecycle Timeline</span>
             </h4>
 
             <div className="lifecycle-timeline">
-              {lifecycleStages.map((stg, idx) => {
-                const isStepDone = stg.status === 'done';
-                const isStepCurrent = stg.status === 'current';
-                const isStepFlagged = stg.status === 'flagged';
-                const isStepBlocked = stg.status === 'blocked';
-
+              {(pack.lifecycle || []).map((evt, idx) => {
+                const isLast = idx === (pack.lifecycle || []).length - 1;
                 return (
-                  <div key={stg.name} className="lifecycle-step-row">
+                  <div key={idx} className="lifecycle-step-row">
                     <div className="lifecycle-marker-col">
-                      <div className={`lifecycle-dot ${isStepBlocked ? 'dot-blocked' : isStepFlagged ? 'dot-flagged' : isStepDone ? 'dot-done' : isStepCurrent ? 'dot-current' : 'dot-upcoming'}`}>
-                        {isStepDone && <CheckCircle2 size={10} />}
-                        {isStepFlagged && <AlertTriangle size={10} />}
-                        {isStepBlocked && <X size={10} />}
-                        {!isStepDone && !isStepFlagged && !isStepBlocked && <span>{idx + 1}</span>}
+                      <div className={`lifecycle-dot ${isLast ? 'dot-current' : 'dot-done'}`}>
+                        {isLast ? <Activity size={10} /> : <CheckCircle2 size={10} />}
                       </div>
-                      {idx < lifecycleStages.length - 1 && (
-                        <div className={`lifecycle-line ${isStepDone ? 'line-done' : ''}`} />
+                      {idx < (pack.lifecycle || []).length - 1 && (
+                        <div className="lifecycle-line line-done" />
                       )}
                     </div>
-
                     <div className="lifecycle-content-col">
                       <div className="lifecycle-step-top">
-                        <span className={`lifecycle-step-name font-display ${isStepCurrent ? 'text-blue font-bold' : ''}`}>
-                          {stg.name}
+                        <span className={`lifecycle-step-name font-display ${isLast ? 'text-blue font-bold' : ''}`}>
+                          {evt.event}
                         </span>
-                        <span className="lifecycle-step-time font-mono">{stg.time}</span>
+                        <span className="lifecycle-step-time font-mono">{fmtTime(evt.time)}</span>
                       </div>
-                      <span className="lifecycle-step-desc font-mono">{stg.by} • {stg.location}</span>
+                      <span className="lifecycle-step-desc font-mono">{evt.by} • {evt.location}</span>
                     </div>
                   </div>
                 );
@@ -215,39 +410,40 @@ export const PackDetailDrawer = ({ pack, onClose, onAssignOT, onQuarantine }) =>
           </div>
         </div>
 
-        {/* Footer Actions: OT Assignment for Valid Packs, Blocked for Expired */}
+        {/* Footer Actions */}
         <div className="pack-drawer-footer">
           {isExpired ? (
             <div className="footer-blocked-notice font-mono">
               <ShieldAlert size={15} className="text-red" />
-              <span>OT Assignment Disabled: Expired Pack</span>
+              <span>OT Assignment & Patient Dispatch Disabled: Expired Pack</span>
             </div>
           ) : (
-            <div className="footer-assign-box">
-              <div className="assign-select-wrapper">
-                <span className="assign-label font-mono">ASSIGN TO OT:</span>
-                <select 
-                  value={selectedSuite}
-                  onChange={(e) => setSelectedSuite(e.target.value)}
-                  className="ot-select-dropdown font-mono"
-                  disabled={assignSuccess}
-                >
-                  <option value="OT-01">OT-01 (Orthopedics)</option>
-                  <option value="OT-02">OT-02 (General)</option>
-                  <option value="OT-03">OT-03 (Sports Med)</option>
-                  <option value="OT-04">OT-04 (Cardiovascular)</option>
-                </select>
-              </div>
-
-              <Button
-                size="sm"
-                variant="teal"
-                icon={Building2}
-                onClick={handleAssign}
-                disabled={assignSuccess}
-              >
-                {assignSuccess ? `Assigned to ${selectedSuite}` : 'Assign to OT'}
-              </Button>
+            <div className="footer-assign-box" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {pack.status === 'STERILE' && (
+                <>
+                  <Button size="sm" variant="teal" icon={PackageCheck} onClick={handleReserve}>
+                    Reserve for Patient
+                  </Button>
+                  <Button size="sm" variant="primary" icon={Building2} onClick={handleIssue}>
+                    Issue to OT
+                  </Button>
+                </>
+              )}
+              {pack.status === 'RESERVED' && (
+                <Button size="sm" variant="primary" icon={Building2} onClick={handleIssue}>
+                  Issue to {pack.assigned_ot || 'OT'}
+                </Button>
+              )}
+              {(pack.status === 'IN_OT' || pack.status === 'ISSUED') && (
+                <Button size="sm" variant="secondary" icon={RotateCcw} onClick={handleMarkReturned}>
+                  Mark Returned
+                </Button>
+              )}
+              {['RETURN_PENDING', 'DECONTAMINATION', 'REPROCESSING', 'STERILIZING', 'VERIFICATION_PENDING'].includes(pack.status) && (
+                <Button size="sm" variant="teal" icon={ChevronRight} onClick={handleAdvanceLifecycle}>
+                  Advance Lifecycle →
+                </Button>
+              )}
             </div>
           )}
         </div>

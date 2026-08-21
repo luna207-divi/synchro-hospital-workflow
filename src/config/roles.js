@@ -5,17 +5,18 @@
 export const ROLES = {
   ADMIN: 'ADMIN',
   DOCTOR: 'DOCTOR',
+  NURSE: 'NURSE',
   NURSING: 'NURSING',
   FRONT_DESK: 'FRONT_DESK',
   FRONTDESK: 'FRONT_DESK',
+  CSSD: 'CSSD',
+  OT_MANAGER: 'OT_MANAGER',
   BILLING: 'BILLING',
 
   // System aliases
   HOSPITAL_ADMIN: 'ADMIN',
-  OT_MANAGER: 'DOCTOR',
   SURGEON: 'DOCTOR',
-  CSSD_MANAGER: 'NURSING',
-  NURSE: 'NURSING',
+  CSSD_MANAGER: 'CSSD',
   ADMISSIONS_STAFF: 'FRONT_DESK',
 };
 
@@ -24,16 +25,19 @@ export const ROLE_DASHBOARDS = {
   HOSPITAL_ADMIN: '/admin',
 
   DOCTOR: '/doctor',
-  OT_MANAGER: '/doctor',
   SURGEON: '/doctor',
 
-  NURSING: '/nursing',
-  CSSD_MANAGER: '/nursing',
   NURSE: '/nursing',
+  NURSING: '/nursing',
 
   FRONT_DESK: '/frontdesk',
   FRONTDESK: '/frontdesk',
   ADMISSIONS_STAFF: '/frontdesk',
+
+  CSSD: '/cssd',
+  CSSD_MANAGER: '/cssd',
+
+  OT_MANAGER: '/ot',
 
   BILLING: '/billing',
 };
@@ -56,11 +60,10 @@ export const isRoleAuthorized = (userRole, allowedRoles) => {
     const normAllowed = String(allowed).toUpperCase().trim();
     if (normAllowed === normalizedUserRole) return true;
     // Normalize underscore differences (FRONTDESK vs FRONT_DESK)
-    if (normAllowed.replace('_', '') === normalizedUserRole.replace('_', '')) return true;
+    if (normAllowed.replace(/_/g, '') === normalizedUserRole.replace(/_/g, '')) return true;
     // Check aliases
     if (ROLES[normAllowed] && ROLES[normAllowed] === normalizedUserRole) return true;
     if (ROLES[normalizedUserRole] && ROLES[normalizedUserRole] === normAllowed) return true;
     return false;
   });
 };
-

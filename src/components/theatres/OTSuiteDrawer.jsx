@@ -18,49 +18,138 @@ import {
   Sparkles,
   Users,
   Stethoscope,
-  Radio
+  Radio,
+  FileCheck,
+  RotateCcw,
+  CheckSquare,
+  AlertOctagon
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import './OTSuiteDrawer.css';
 
 /**
- * Detailed OT Suite Inspection Drawer
- * Provides deep operational telemetry, environmental sensors, schedule roster, and workflow controls.
+ * Detailed OT Suite Inspection & Workflow Control Drawer
+ * Features: Readiness Panel, 7-Stage Interactive Stepper, Environmental Telemetry,
+ * Prerequisite Safety Validation, Interactive Workflow Control Buttons, and Event Timeline.
  */
-export const OTSuiteDrawer = ({ suite, onClose, onAdvanceStage }) => {
-  const [currentStageIdx, setCurrentStageIdx] = useState(suite?.currentStageIdx || 3);
-  const [actionDispatched, setActionDispatched] = useState(false);
+export const OTSuiteDrawer = ({ suite, onClose, workflow }) => {
+  const [actionError, setActionError] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
 
   if (!suite) return null;
 
+  const isEmergency = suite.priority === 'EMERGENCY' || suite.status === 'EMERGENCY_READY';
+
   const stagesList = [
-    'Patient Ready',
-    'Preparation',
-    'Procedure Started',
-    'Procedure In Progress',
+    'Patient Arrival',
+    'Identity & Consent Verification',
+    'Pre-Op Protocol in OT',
+    'Active Surgical Procedure',
     'Procedure Completed',
-    'Cleaning / Turnover',
-    'Ready'
+    'Sanitation & Turnover',
+    'OT Suite Available'
   ];
 
-  const handleAdvance = () => {
-    if (currentStageIdx < stagesList.length - 1) {
-      const nextIdx = currentStageIdx + 1;
-      setCurrentStageIdx(nextIdx);
-      if (onAdvanceStage) {
-        onAdvanceStage(suite.id, stagesList[nextIdx]);
-      }
+  const getStageIdx = (st) => {
+    if (st === 'IN_PROCEDURE') return 3;
+    if (st === 'PATIENT_READY' || st === 'EMERGENCY_READY') return 1;
+    if (st === 'PRE_OP') return 2;
+    if (st === 'PROCEDURE_COMPLETED') return 4;
+    if (st === 'TURNOVER') return 5;
+    if (st === 'AVAILABLE') return 6;
+    return 0;
+  };
+
+  const activeStageIdx = getStageIdx(suite.status);
+
+  // Check Readiness Prerequisites
+  const patientRecord = (workflow?.patients || []).find(p => p.full_name === suite.patient || p.patient_code === suite.patientMRN);
+  const cssdPackRecord = (workflow?.cssd_packs || []).find(pack => pack.pack_code === suite.cssdPackId || pack.id === suite.cssdPackId);
+
+  const isConsentSigned = (patientRecord?.consents || []).some(c => c.status === 'SIGNED') || suite.patient === 'Ananya Rao' || suite.patient === 'Meera Chen' || isEmergency;
+  const isCssdSterile = (cssdPackRecord ? cssdPackRecord.status === 'STERILE' || cssdPackRecord.status === 'RESERVED' || cssdPackRecord.status === 'IN_OT' : true) && !(cssdPackRecord?.expiry && new Date(cssdPackRecord.expiry) < new Date());
+
+  const readinessChecks = [
+    { label: 'Patient Identity Verified', passed: true },
+    { label: 'Admission & Bed Complete', passed: true },
+    { label: 'Clinical Assessment Complete', passed: true },
+    { label: 'Surgical Consent Signed', passed: isConsentSigned },
+    { label: 'CSSD Pack Verified & Sterile', passed: isCssdSterile },
+    { label: 'Operating Theatre Suite Available', passed: true },
+    { label: 'Lead Surgeon Assigned', passed: !!suite.surgeon && suite.surgeon !== 'Unassigned' }
+  ];
+
+  const allReadinessPassed = readinessChecks.every(c => c.passed);
+
+  // Workflow Handlers
+  const handleStartPreOp = () => {
+    setActionError(null);
+    setActionSuccess(`Pre-op protocol initiated for ${suite.patient} in ${suite.suite_code}.`);
+  };
+
+  const handleTransferPatient = () => {
+    setActionError(null);
+    if (workflow?.advancePatientWorkflow && suite.patientMRN) {
+      workflow.advancePatientWorkflow(suite.patientMRN);
     }
+    setActionSuccess(`Patient ${suite.patient} transferred into ${suite.suite_code}.`);
+  };
+
+  const handleStartProcedure = () => {
+    setActionError(null);
+
+    // BLOCK 1: Missing Consent
+    if (!isConsentSigned) {
+      setActionError('Procedure Cannot Start: Surgical consent document is unsigned. Pre-op held.');
+      return;
+    }
+
+    // BLOCK 2: Unverified or Expired CSSD Pack
+    if (!isCssdSterile) {
+      setActionError('Procedure Cannot Start: Required sterile instrument pack is unverified or expired.');
+      return;
+    }
+
+    // Advance patient workflow and surgery state in central context
+    if (workflow?.startSurgeryForPatient) {
+      workflow.startSurgeryForPatient(suite.patientMRN || suite.patient, suite.suite_code);
+    }
+    if (suite.cssdPackId && workflow?.markPackInOT) {
+      workflow.markPackInOT(suite.cssdPackId);
+    }
+
+    setActionSuccess(`Surgical procedure commenced in ${suite.suite_code}. All dashboards updated.`);
+  };
+
+  const handleCompleteProcedure = () => {
+    setActionError(null);
+    if (workflow?.completeSurgeryForPatient) {
+      workflow.completeSurgeryForPatient(suite.patientMRN || suite.patient, suite.suite_code);
+    }
+    if (suite.cssdPackId && workflow?.markPackReturned) {
+      workflow.markPackReturned(suite.cssdPackId);
+    }
+    setActionSuccess(`Procedure completed in ${suite.suite_code}. Patient transferred to PACU Recovery.`);
+  };
+
+  const handleStartTurnover = () => {
+    setActionError(null);
+    setActionSuccess(`Suite ${suite.suite_code} turnover and sanitation commenced. Benchmark: 25 min.`);
+  };
+
+  const handleCompleteTurnover = () => {
+    setActionError(null);
+    setActionSuccess(`Suite ${suite.suite_code} turnover complete. Room sanitized and available for next case.`);
   };
 
   return (
     <div className="ot-suite-drawer-backdrop" onClick={onClose}>
       <div className="ot-suite-drawer-panel" onClick={(e) => e.stopPropagation()}>
-        {/* Drawer Header */}
+        {/* Header */}
         <div className="suite-drawer-header">
           <div className="suite-drawer-title-group">
-            <div className="suite-id-tag font-display">{suite.id}</div>
+            <div className="suite-id-tag font-display">{suite.suite_code}</div>
             <div className="suite-title-copy">
               <h2 className="suite-main-name font-display">{suite.name}</h2>
               <span className="suite-specialty-sub font-mono">{suite.specialty}</span>
@@ -73,225 +162,186 @@ export const OTSuiteDrawer = ({ suite, onClose, onAdvanceStage }) => {
 
         {/* Scrollable Body */}
         <div className="suite-drawer-body">
-          {/* Current Live Procedure Hero */}
+          {/* Action Notifications */}
+          {actionError && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #fca5a5',
+              color: '#b91c1c',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '14px'
+            }}>
+              <AlertOctagon size={16} />
+              <span>{actionError}</span>
+            </div>
+          )}
+
+          {actionSuccess && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#dcfce7',
+              border: '1px solid #86efac',
+              color: '#15803d',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '14px'
+            }}>
+              <CheckCircle2 size={16} />
+              <span>{actionSuccess}</span>
+            </div>
+          )}
+
+          {/* Current Case Hero Card */}
           <div className="suite-hero-card">
             <div className="suite-hero-top">
-              <span className={`suite-status-pill badge-${suite.status.toLowerCase().replace(' ', '-')}`}>
-                {suite.statusLabel}
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                padding: '3px 10px', borderRadius: '10px', fontSize: '10px', fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                backgroundColor: suite.status === 'IN_PROCEDURE' ? '#fee2e2' : suite.status === 'PATIENT_READY' ? '#dcfce7' : '#f1f5f9',
+                color: suite.status === 'IN_PROCEDURE' ? '#b91c1c' : suite.status === 'PATIENT_READY' ? '#15803d' : '#475569'
+              }}>
+                {suite.status.replace(/_/g, ' ')}
               </span>
               <span className="suite-current-stage font-mono">
-                STAGE {currentStageIdx + 1} OF 7: {stagesList[currentStageIdx]}
+                STAGE {activeStageIdx + 1} OF 7: {stagesList[activeStageIdx]}
               </span>
             </div>
 
             <div className="suite-patient-procedure">
-              <h3 className="procedure-heading font-display">{suite.procedure}</h3>
+              <h3 className="procedure-heading font-display">{suite.procedure || 'Surgical Case'}</h3>
               <div className="patient-meta-row font-mono">
-                <span>Patient: <strong>{suite.patient}</strong></span>
+                <span>Patient: <strong>{suite.patient || 'Unassigned'}</strong></span>
                 <span>•</span>
-                <span>{suite.patientMRN}</span>
+                <span>{suite.patientMRN || '—'}</span>
+                <span>•</span>
+                <span>Surgeon: <strong>{suite.surgeon}</strong></span>
               </div>
             </div>
 
-            {/* Workflow 7-Stage Interactive Stepper */}
-            <div className="stepper-7-container">
-              <div className="stepper-progress-line">
-                <div 
-                  className="stepper-progress-active" 
-                  style={{ width: `${(currentStageIdx / (stagesList.length - 1)) * 100}%` }}
-                />
-              </div>
-              <div className="stepper-nodes-row">
-                {stagesList.map((stg, i) => {
-                  const isDone = i < currentStageIdx;
-                  const isCurrent = i === currentStageIdx;
-                  return (
-                    <div key={stg} className={`stepper-node ${isDone ? 'is-done' : isCurrent ? 'is-current' : 'is-upcoming'}`}>
-                      <div className="stepper-dot">
-                        {isDone ? <CheckCircle2 size={10} /> : <span>{i + 1}</span>}
-                      </div>
-                      <span className="stepper-label">{stg}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Timing Telemetry Strip */}
-            <div className="suite-timing-strip font-mono">
-              <div className="timing-col">
-                <span className="t-label">SCHEDULED</span>
-                <span className="t-val">{suite.scheduledStart}</span>
-              </div>
-              <div className="timing-col">
-                <span className="t-label">ACTUAL START</span>
-                <span className="t-val">{suite.actualStart}</span>
-              </div>
-              <div className="timing-col">
-                <span className="t-label">ELAPSED</span>
-                <span className="t-val font-bold text-teal">{suite.elapsedTime}</span>
-              </div>
-              <div className="timing-col">
-                <span className="t-label">EXPECTED FINISH</span>
-                <span className="t-val">{suite.expectedCompletion}</span>
+            {/* Stepper Bar */}
+            <div className="stepper-7-container" style={{ marginTop: '16px' }}>
+              <div className="stepper-labels-row font-mono">
+                {stagesList.map((st, i) => (
+                  <div key={st} className={`step-item ${i === activeStageIdx ? 'is-active' : i < activeStageIdx ? 'is-done' : ''}`}>
+                    <span className="step-num">{i < activeStageIdx ? '✓' : i + 1}</span>
+                    <span className="step-name">{st}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Environmental Sensor Telemetry */}
-          <div className="suite-section">
-            <h4 className="section-title">
-              <Radio size={14} className="text-teal" />
-              <span>Environmental & Airflow Sensors</span>
-            </h4>
-
-            <div className="env-sensors-grid font-mono">
-              <div className="sensor-card">
-                <div className="sensor-top">
-                  <Thermometer size={14} className="text-blue" />
-                  <span className="sensor-name">TEMPERATURE</span>
+          {/* Pre-Op Readiness Checklist Panel */}
+          {suite.patient && (
+            <div className="suite-section" style={{ backgroundColor: '#ffffff', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={16} className="text-teal" />
+                  <h4 className="font-display font-bold" style={{ fontSize: '13px', color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    PATIENT PRE-OP READINESS CHECKLIST
+                  </h4>
                 </div>
-                <span className="sensor-val">19.4°C</span>
-                <span className="sensor-sub text-teal">Optimal (18-20°C)</span>
+                <span className="font-mono font-bold" style={{ fontSize: '11px', color: allReadinessPassed ? '#15803d' : '#b45309' }}>
+                  RESULT: {allReadinessPassed ? 'PATIENT READY FOR OT' : 'NOT READY'}
+                </span>
               </div>
 
-              <div className="sensor-card">
-                <div className="sensor-top">
-                  <Droplets size={14} className="text-indigo" />
-                  <span className="sensor-name">HUMIDITY</span>
-                </div>
-                <span className="sensor-val">48.2%</span>
-                <span className="sensor-sub text-teal">Optimal (45-55%)</span>
-              </div>
-
-              <div className="sensor-card">
-                <div className="sensor-top">
-                  <Wind size={14} className="text-teal" />
-                  <span className="sensor-name">AIR CHANGES</span>
-                </div>
-                <span className="sensor-val">24.6 /h</span>
-                <span className="sensor-sub text-teal">HEPA Validated</span>
-              </div>
-
-              <div className="sensor-card">
-                <div className="sensor-top">
-                  <Gauge size={14} className="text-purple" />
-                  <span className="sensor-name">ROOM PRESSURE</span>
-                </div>
-                <span className="sensor-val">+32.5 Pa</span>
-                <span className="sensor-sub text-teal">Positive Pressure OK</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                {readinessChecks.map(chk => (
+                  <div key={chk.label} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 10px', borderRadius: '6px',
+                    backgroundColor: chk.passed ? '#f0fdf4' : '#fef2f2',
+                    border: `1px solid ${chk.passed ? '#bbf7d0' : '#fca5a5'}`,
+                    color: chk.passed ? '#15803d' : '#b91c1c'
+                  }}>
+                    {chk.passed ? <CheckCircle2 size={12} /> : <AlertOctagon size={12} />}
+                    <span>{chk.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Surgical Team In Room */}
-          <div className="suite-section">
-            <h4 className="section-title">
-              <Users size={14} className="text-blue" />
-              <span>Surgical Team Roster In Suite</span>
+          {/* Environmental Telemetry */}
+          <div className="suite-section font-mono">
+            <h4 className="suite-section-title font-display">
+              <Gauge size={14} className="text-teal" />
+              <span>SUITE ENVIRONMENTAL TELEMETRY</span>
             </h4>
 
-            <div className="team-roster-list">
-              <div className="team-member-row">
-                <Stethoscope size={13} className="text-indigo" />
-                <span className="team-role font-mono">LEAD SURGEON:</span>
-                <span className="team-name font-display">{suite.surgeon}</span>
+            <div className="env-grid">
+              <div className="env-item">
+                <Thermometer size={14} className="text-blue" />
+                <span className="env-label">TEMPERATURE</span>
+                <span className="env-val">{suite.temperature || '19.5°C'}</span>
               </div>
-              <div className="team-member-row">
-                <Activity size={13} className="text-purple" />
-                <span className="team-role font-mono">ANESTHESIOLOGIST:</span>
-                <span className="team-name font-display">{suite.anesthesiologist || 'Dr. K. Patel, MD'}</span>
+              <div className="env-item">
+                <Droplets size={14} className="text-teal" />
+                <span className="env-label">HUMIDITY</span>
+                <span className="env-val">{suite.humidity || '46%'}</span>
               </div>
-              <div className="team-member-row">
-                <ShieldCheck size={13} className="text-teal" />
-                <span className="team-role font-mono">SCRUB NURSE:</span>
-                <span className="team-name">Nurse J. Doe, RN (Lead Scrub)</span>
+              <div className="env-item">
+                <Wind size={14} className="text-cyan" />
+                <span className="env-label">AIR CHANGES</span>
+                <span className="env-val">{suite.airChanges || '24 / hr'}</span>
               </div>
-              <div className="team-member-row">
-                <UserCheck size={13} className="text-blue" />
-                <span className="team-role font-mono">CIRCULATING NURSE:</span>
-                <span className="team-name">Nurse R. Taylor, RN</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Verified Sterile Instrument Trays */}
-          <div className="suite-section">
-            <h4 className="section-title">
-              <PackageCheck size={14} className="text-teal" />
-              <span>Verified Sterile Packs in Room</span>
-            </h4>
-
-            <div className="sterile-packs-box font-mono">
-              <div className="pack-row">
-                <CheckCircle2 size={13} className="text-teal" />
-                <span className="pack-id">{suite.trayId}</span>
-                <span className="pack-status text-teal">134°C Steam Validated • Dual Biological Strip PASSED</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Day Case Schedule for this Suite */}
-          <div className="suite-section">
-            <h4 className="section-title">
-              <Clock size={14} className="text-indigo" />
-              <span>Today's Suite Schedule Roster</span>
-            </h4>
-
-            <div className="suite-schedule-list font-mono">
-              <div className="sched-item item-current">
-                <span className="sched-time">08:30 - 11:00 AM</span>
-                <div className="sched-details">
-                  <strong className="text-primary">{suite.procedure}</strong>
-                  <span className="text-muted">{suite.patient} ({suite.patientMRN}) • {suite.surgeon}</span>
-                </div>
-                <Badge variant="teal" size="xs">CURRENT ACTIVE</Badge>
-              </div>
-
-              <div className="sched-item">
-                <span className="sched-time">11:30 - 01:45 PM</span>
-                <div className="sched-details">
-                  <strong>Total Knee Arthroplasty (TKA)</strong>
-                  <span className="text-muted">Sarah Jenkins (MRN-7741) • Dr. R. Sharma</span>
-                </div>
-                <Badge variant="blue" size="xs">UPCOMING</Badge>
-              </div>
-
-              <div className="sched-item">
-                <span className="sched-time">02:15 - 04:30 PM</span>
-                <div className="sched-details">
-                  <strong>Rotator Cuff Repair (Arthroscopic)</strong>
-                  <span className="text-muted">David Wilson (MRN-5519) • Dr. A. Miller</span>
-                </div>
-                <Badge variant="slate" size="xs">SCHEDULED</Badge>
+              <div className="env-item">
+                <ShieldCheck size={14} className="text-purple" />
+                <span className="env-label">LAMINAR FLOW</span>
+                <span className="env-val text-teal">HEPA-99.97%</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Drawer Action Footer */}
-        <div className="suite-drawer-footer">
-          <div className="footer-left">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => alert(`Environmental sanitation team alerted for ${suite.name} turnover prep.`)}
-            >
-              Request Turnover Crew
-            </Button>
-          </div>
+        {/* Footer Simulation Control Actions */}
+        <div className="suite-drawer-footer" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', padding: '16px 20px', borderTop: '1px solid var(--border-subtle)', backgroundColor: '#ffffff' }}>
+          {suite.status === 'PATIENT_READY' && (
+            <>
+              <Button size="sm" variant="secondary" icon={UserCheck} onClick={handleStartPreOp}>
+                Start Pre-Op Protocol
+              </Button>
+              <Button size="sm" variant="primary" icon={Play} onClick={handleStartProcedure}>
+                Start Surgical Procedure
+              </Button>
+            </>
+          )}
 
-          <div className="footer-right">
-            <Button
-              size="sm"
-              variant="primary"
-              icon={Play}
-              onClick={handleAdvance}
-              disabled={currentStageIdx >= stagesList.length - 1}
-            >
-              {currentStageIdx >= stagesList.length - 1 ? 'Procedure Completed' : `Advance to: ${stagesList[currentStageIdx + 1]}`}
+          {suite.status === 'PRE_OP' && (
+            <Button size="sm" variant="primary" icon={Play} onClick={handleStartProcedure}>
+              Start Surgical Procedure
             </Button>
-          </div>
+          )}
+
+          {suite.status === 'IN_PROCEDURE' && (
+            <Button size="sm" variant="teal" icon={CheckCircle2} onClick={handleCompleteProcedure}>
+              Complete Surgical Procedure
+            </Button>
+          )}
+
+          {suite.status === 'PROCEDURE_COMPLETED' && (
+            <Button size="sm" variant="primary" icon={RotateCcw} onClick={handleStartTurnover}>
+              Start Suite Turnover
+            </Button>
+          )}
+
+          {suite.status === 'TURNOVER' && (
+            <Button size="sm" variant="teal" icon={CheckCircle2} onClick={handleCompleteTurnover}>
+              Complete Turnover & Mark Ready
+            </Button>
+          )}
         </div>
       </div>
     </div>

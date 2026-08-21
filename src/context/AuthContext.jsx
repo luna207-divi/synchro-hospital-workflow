@@ -147,6 +147,11 @@ export const AuthProvider = ({ children }) => {
   // Sign in with email/employee ID + password
   const signIn = async (emailOrId, password) => {
     const cleanInput = String(emailOrId || '').trim().toLowerCase();
+    const cleanPass = String(password || '').trim();
+
+    if (!cleanInput) {
+      throw new Error('Please enter your email or employee ID.');
+    }
 
     // Check seed data first for instant matching & local session setup
     const foundDemoUser = DEMO_USERS.find(
@@ -156,10 +161,15 @@ export const AuthProvider = ({ children }) => {
            u.role.toLowerCase() === cleanInput
     );
 
-    // Validate account status
+    // Validate account status & password
     if (foundDemoUser) {
       if (foundDemoUser.status === 'INACTIVE') {
         throw new Error('Account is inactive. Please contact administration.');
+      }
+
+      // Check password if provided
+      if (cleanPass && cleanPass !== foundDemoUser.passwordHash && cleanPass !== 'synchro123' && cleanPass !== 'Admin@123' && cleanPass !== 'Front@123' && cleanPass !== 'Doctor@123' && cleanPass !== 'Nurse@123' && cleanPass !== 'CSSD@123' && cleanPass !== 'OT@123') {
+        throw new Error('Invalid email or password.');
       }
 
       const mockUser = {
@@ -189,7 +199,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
         user: mockUser,
         session: mockSession,
-        profile: mockProfile
+        profile: mockProfile,
+        loginTime: Date.now()
       }));
 
       return { user: mockUser, session: mockSession, profile: mockProfile };

@@ -38,9 +38,7 @@ export const Sidebar = ({ activeNav: activeNavProp, onNavSelect }) => {
   const activeNav = activeNavProp || currentSegment;
 
   const handleBrandClick = () => {
-    const userRole = profile?.role || activeRole?.id;
-    const targetDashboard = getDashboardForRole(userRole);
-    navigate(targetDashboard);
+    navigate('/');
   };
 
   const allSections = [

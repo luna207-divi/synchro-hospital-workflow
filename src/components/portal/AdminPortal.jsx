@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Building2, 
   Users, 
@@ -21,7 +21,8 @@ import {
   Plus, 
   Eye, 
   TrendingUp, 
-  RefreshCw, 
+  RefreshCw,
+  RotateCcw, 
   Sliders, 
   UserCheck, 
   Flame, 
@@ -31,140 +32,105 @@ import {
   Check,
   Heart,
   Timer,
-  Package
+  Package,
+  ChevronRight,
+  ShieldAlert,
+  Sparkles,
+  AlertOctagon,
+  Info,
+  CheckSquare,
+  TrendingDown
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { SearchInput } from '../common/Input';
-import { usePatients } from '../../hooks/usePatients';
-import { useTheatres } from '../../hooks/useTheatres';
-import { useSurgeries } from '../../hooks/useSurgeries';
-import { useCssdPacks } from '../../hooks/useCssdPacks';
-import { useBillingDashboard } from '../../hooks/useBilling';
-import { useWorkflowEngine } from '../../hooks/useWorkflowEngine';
-import { auditService } from '../../services/auditService';
+import { useWorkflow } from '../../context/WorkflowContext';
 import { WorkflowTimeline } from '../dashboard/WorkflowTimeline';
-import { ActionableInsights } from '../analytics/ActionableInsights';
 import { ReportsPage } from '../reports/ReportsPage';
 import './AdminPortal.css';
 
 export const AdminPortal = () => {
+  const workflow = useWorkflow();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditFilter, setAuditFilter] = useState('ALL');
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState('OT_UTIL');
+  const [timeframe, setTimeframe] = useState('TODAY');
+  const [syncTime, setSyncTime] = useState(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
-  // Live Database Hooks
-  const { data: dbPatients = [] } = usePatients();
-  const { data: dbTheatres = [] } = useTheatres();
-  const { data: dbSurgeries = [] } = useSurgeries();
-  const { data: dbPacks = [] } = useCssdPacks();
-  const { data: billingData } = useBillingDashboard();
-  const { events: workflowEvents } = useWorkflowEngine();
+  // Live state from WorkflowContext
+  const patients = workflow.patients || [];
+  const cssdPacks = workflow.cssd_packs || [];
+  const theatres = workflow.operatingTheatres || [];
+  const surgeries = workflow.surgeries || [];
+  const alerts = workflow.alerts || [];
+  const timelineEvents = workflow.timelineEvents || [];
 
-  // Load audit logs
-  useEffect(() => {
-    auditService.getAuditLogs({ action: auditFilter }).then(res => {
-      setAuditLogs(res.data || []);
-    });
-  }, [auditFilter]);
+  // Live Refresh Sync Handler
+  const handleRefreshSync = () => {
+    setSyncTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  };
 
-  // Derived KPI Metrics for Top 8 Cards
-  const totalPatientsCount = dbPatients.length > 0 ? dbPatients.length : 1248;
-  const todayAdmissionsCount = dbPatients.filter(p => p.admission_status === 'ADMITTED').length || 86;
-  const todaySurgeriesCount = dbSurgeries.length > 0 ? dbSurgeries.length : 34;
-  
-  const activeTheatres = dbTheatres.length > 0 ? dbTheatres : [
-    { id: '1', suite_code: 'OT-01', name: 'Suite 01', status: 'IN_SURGERY', specialty: 'Orthopedics' },
-    { id: '2', suite_code: 'OT-02', name: 'Suite 02', status: 'READY', specialty: 'General & Lap' },
-    { id: '3', suite_code: 'OT-03', name: 'Suite 03', status: 'TURNOVER', specialty: 'Sports Medicine' },
-    { id: '4', suite_code: 'OT-04', name: 'Suite 04', status: 'IN_SURGERY', specialty: 'Cardiovascular' },
-  ];
-  const otUtilizationRate = Math.round((activeTheatres.filter(t => t.status === 'IN_SURGERY').length / activeTheatres.length) * 100) || 82;
-
-  const activeAlertsCount = activeTheatres.filter(t => t.status === 'BLOCKED').length + dbPacks.filter(p => p.status === 'EXPIRED').length || 7;
+  // Compute Live Metrics
+  const totalPatientsCount = patients.length > 0 ? patients.length : 1248;
+  const todayAdmissionsCount = patients.filter(p => p.admission_status === 'ADMITTED' || p.workflowStage === 'ADMITTED').length || 86;
+  const activeSurgeriesCount = surgeries.filter(s => s.status === 'IN_SURGERY').length || theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length || 6;
+  const activeTheatresCount = theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length || 6;
+  const otUtilizationRate = Math.round((activeTheatresCount / 12) * 100) || 82;
+  const sterilePacksCount = cssdPacks.filter(p => p.status === 'STERILE').length;
+  const cssdReadinessPct = cssdPacks.length > 0 ? Math.round((sterilePacksCount / cssdPacks.length) * 100) : 94;
+  const activeAlertsCount = alerts.filter(a => a.status !== 'Resolved').length;
+  const criticalAlertsCount = alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').length;
+  const warningAlertsCount = alerts.filter(a => a.severity === 'Warning' && a.status !== 'Resolved').length;
   const availableBedsCount = 23;
   const totalBedsCount = 120;
-  const cssdSterilePacks = dbPacks.filter(p => p.status === 'STERILE' || p.status === 'DISPATCHED').length;
-  const cssdAvailabilityPct = dbPacks.length > 0 ? Math.round((cssdSterilePacks / dbPacks.length) * 100) : 94;
-  const delayedWorkflowsCount = workflowEvents.filter(e => e.event_type === 'STATUS_CHANGE' && e.new_status === 'BLOCKED').length || 4;
+  const delayedWorkflowsCount = alerts.filter(a => a.severity === 'Warning' || a.severity === 'Critical').length || 4;
 
-  // Navigation Tabs (trimmed to 9 primary)
+  // Patient Funnel Counts
+  const funnel = useMemo(() => {
+    return {
+      registered: patients.filter(p => p.admission_status === 'REGISTERED').length || 86,
+      admitted: patients.filter(p => p.admission_status === 'ADMITTED').length || 72,
+      assessed: patients.filter(p => p.admission_status === 'ASSESSMENT').length || 64,
+      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length || 42,
+      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length || 18,
+      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length || 6,
+      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length || 8,
+      discharge: patients.filter(p => p.admission_status === 'DISCHARGED').length || 12,
+    };
+  }, [patients]);
+
+  // CSSD Breakdown
+  const cssdBreakdown = useMemo(() => {
+    return {
+      total: cssdPacks.length,
+      sterile: cssdPacks.filter(p => p.status === 'STERILE').length,
+      reserved: cssdPacks.filter(p => p.status === 'RESERVED').length,
+      inOt: cssdPacks.filter(p => p.status === 'IN_OT' || p.status === 'ISSUED').length,
+      reprocessing: cssdPacks.filter(p => ['DECONTAMINATION', 'REPROCESSING', 'STERILIZING', 'RETURN_PENDING'].includes(p.status)).length,
+      expiring: cssdPacks.filter(p => p.expiryState === 'EXPIRING_SOON' || p.expiryState === 'URGENT').length,
+      expired: cssdPacks.filter(p => p.status === 'EXPIRED' || (p.expiry && new Date(p.expiry) < new Date())).length,
+    };
+  }, [cssdPacks]);
+
+  // Dynamic Executive Insight Text
+  const dynamicInsight = useMemo(() => {
+    const expiredCount = cssdBreakdown.expired;
+    const delayedCount = delayedWorkflowsCount;
+    return `Hospital OT utilization is currently ${otUtilizationRate}%, with CSSD sterility readiness at ${cssdReadinessPct}%. ${expiredCount > 0 ? `${expiredCount} expired sterile pack has been quarantined in Vault B.` : 'All sterile packs are validated.'} ${delayedCount > 0 ? `${delayedCount} active workflow delays detected requiring administrative attention.` : 'All workflows running on track.'} Fast-track Emergency Suite OT-04 is prepped.`;
+  }, [otUtilizationRate, cssdReadinessPct, cssdBreakdown.expired, delayedWorkflowsCount]);
+
+  // Navigation Tabs
   const navTabs = [
-    { id: 'Overview', label: 'Overview', icon: Building2 },
-    { id: 'Patients', label: 'Patients', icon: Users },
-    { id: 'Doctors', label: 'Doctors & Staff', icon: Stethoscope },
-    { id: 'Departments', label: 'Departments', icon: Building2 },
-    { id: 'Admissions', label: 'Admissions', icon: UserCheck },
-    { id: 'RoomsBeds', label: 'Rooms & Beds', icon: Bed },
+    { id: 'Overview', label: 'Executive Intelligence', icon: Building2 },
+    { id: 'Patients', label: 'Patient Operations', icon: Users },
     { id: 'OT', label: 'Operating Theatres', icon: Activity },
-    { id: 'CSSD', label: 'CSSD', icon: PackageCheck },
-    { id: 'Billing', label: 'Billing', icon: CreditCard },
-  ];
-
-  // More tabs (overflow)
-  const moreNavTabs = [
-    { id: 'Workflow', label: 'Workflow', icon: Workflow },
-    { id: 'Alerts', label: 'Alerts', icon: AlertTriangle },
-    { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'Reports', label: 'Reports', icon: FileText },
-    { id: 'AuditLogs', label: 'Audit Logs', icon: ShieldCheck },
-    { id: 'Settings', label: 'Settings', icon: SettingsIcon },
-  ];
-
-  const [showMoreTabs, setShowMoreTabs] = useState(false);
-
-  const allTabs = [...navTabs, ...moreNavTabs];
-  const activeTabInMore = moreNavTabs.some(t => t.id === activeTab);
-
-  // Doctors & Staff Directory Mock/DB List
-  const staffMembers = [
-    { id: 'doc-1', name: 'Dr. K. Patel', role: 'Surgeon', dept: 'General Surgery', spec: 'Laparoscopic', avail: 'IN_SURGERY', patients: 4 },
-    { id: 'doc-2', name: 'Dr. A. Miller', role: 'Surgeon', dept: 'Orthopedics', spec: 'Joint Arthroplasty', avail: 'ON_DUTY', patients: 6 },
-    { id: 'doc-3', name: 'Nurse J. Doe', role: 'Nurse Lead', dept: 'Operating Theatres', spec: 'Surgical Prep', avail: 'ON_DUTY', patients: 8 },
-    { id: 'doc-4', name: 'Tech S. Rao', role: 'CSSD Tech', dept: 'Sterilization', spec: 'Autoclave Operation', avail: 'ON_DUTY', patients: 0 },
-    { id: 'doc-5', name: 'Dr. S. Chen', role: 'Anesthesiologist', dept: 'Anesthesia', spec: 'Cardiovascular', avail: 'ON_CALL', patients: 3 },
-  ];
-
-  // CSV Export Generator Handler
-  const handleExportCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Report Type,Generated At,Hospital,Scope\n"
-      + `${selectedReportType},${new Date().toISOString()},Apex Medical Center,Hospital-Wide Operational Audit\n\n`
-      + "Metric,Value,Benchmark,Status\n"
-      + `OT Utilization,${otUtilizationRate}%,80.0%,Optimal\n`
-      + `Available Beds,${availableBedsCount},40,Optimal\n`
-      + `CSSD Pack Availability,${cssdAvailabilityPct}%,90.0%,Optimal\n`
-      + `Delayed Workflows,${delayedWorkflowsCount},0,Action Required\n`;
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `SYNCHRO_Admin_Report_${selectedReportType}_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // PDF Print Handler
-  const handleExportPDF = () => {
-    window.print();
-  };
-
-  // Recent workflow events for overview
-  const recentEvents = [
-    { time: '11:42 AM', event: 'Sterile pack verified', dept: 'CSSD', entity: 'Pack #CSSD-CV-01', status: 'Passed', statusType: 'normal' },
-    { time: '11:36 AM', event: 'Patient admitted', dept: 'Admissions', entity: 'MRN-1048', status: 'Completed', statusType: 'normal' },
-    { time: '11:28 AM', event: 'OT preparation started', dept: 'OT', entity: 'OT-04', status: 'In Progress', statusType: 'active' },
-    { time: '11:15 AM', event: 'Consent form signed', dept: 'Admissions', entity: 'P-1024', status: 'Completed', statusType: 'normal' },
-    { time: '11:02 AM', event: 'Autoclave cycle complete', dept: 'CSSD', entity: 'AC-02', status: 'Cooling', statusType: 'attention' },
-    { time: '10:48 AM', event: 'Surgery completed', dept: 'OT', entity: 'OT-01', status: 'Completed', statusType: 'normal' },
+    { id: 'CSSD', label: 'CSSD Performance', icon: PackageCheck },
+    { id: 'Alerts', label: 'Alerts & Bottlenecks', icon: AlertTriangle },
+    { id: 'Audit', label: 'Audit Trail', icon: Lock },
+    { id: 'Users', label: 'User Management', icon: UserCheck },
+    { id: 'Reports', label: 'Operational Reports', icon: FileText },
   ];
 
   return (
-    <div className="admin-portal-container">
+    <div className="admin-portal-container font-sans">
       {/* ── 1. Hero Header Card ──────────────────────────────── */}
       <div className="admin-hero-header">
         <div className="admin-title-side">
@@ -172,813 +138,547 @@ export const AdminPortal = () => {
             <ShieldCheck size={24} />
           </div>
           <div>
-            <h1 className="admin-main-heading font-display">Hospital Administration Command Center</h1>
+            <h1 className="admin-main-heading font-display">EXECUTIVE COMMAND CENTER</h1>
             <span className="admin-subhead">
-              Enterprise-wide operational visibility across the hospital workflow.
+              Real-Time Hospital Operational Intelligence & Cross-Department Synchronization
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Badge variant="teal" size="md">ADMIN AUTHORIZED</Badge>
-          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={() => window.location.reload()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '8px' }}>
+            <span className="live-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'inline-block' }} />
+            <span className="font-mono text-teal font-bold" style={{ fontSize: '11px' }}>
+              LIVE • Last synchronized: {syncTime}
+            </span>
+          </div>
+          <Button variant="secondary" size="sm" icon={RefreshCw} onClick={handleRefreshSync}>
             Refresh Sync
+          </Button>
+          <Button variant="outline" size="sm" icon={RotateCcw} onClick={() => {
+            if (workflow.resetDemoData) {
+              workflow.resetDemoData();
+              alert('SYNCHRO Demo Data has been reset to clean initial baseline for presentation.');
+            }
+          }}>
+            Reset Demo Data
           </Button>
         </div>
       </div>
 
-      {/* ── 2. KPI Metric Cards (4 × 2 Grid) ────────────────── */}
-      <div className="admin-kpi-grid">
-        <div className="admin-kpi-card kpi-pillar-blue">
-          <div className="kpi-header-row">
-            <span className="kpi-label">TOTAL PATIENTS</span>
-            <Users size={16} className="text-blue" />
-          </div>
-          <div className="kpi-value">{totalPatientsCount.toLocaleString()}</div>
-          <span className="kpi-subtext">Active clinical census</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-indigo">
-          <div className="kpi-header-row">
-            <span className="kpi-label">TODAY'S ADMISSIONS</span>
-            <UserCheck size={16} className="text-indigo" />
-          </div>
-          <div className="kpi-value">{todayAdmissionsCount}</div>
-          <span className="kpi-subtext">+12% vs yesterday</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-teal">
-          <div className="kpi-header-row">
-            <span className="kpi-label">TODAY'S SURGERIES</span>
-            <Activity size={16} className="text-teal" />
-          </div>
-          <div className="kpi-value">{todaySurgeriesCount}</div>
-          <span className="kpi-subtext">28 completed · 6 scheduled</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-emerald">
-          <div className="kpi-header-row">
-            <span className="kpi-label">OT UTILIZATION</span>
-            <BarChart3 size={16} className="text-emerald" />
-          </div>
-          <div className="kpi-value">{otUtilizationRate}%</div>
-          <span className="kpi-subtext">Target: 80%</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-amber">
-          <div className="kpi-header-row">
-            <span className="kpi-label">ACTIVE ALERTS</span>
-            <AlertTriangle size={16} className="text-amber" />
-          </div>
-          <div className="kpi-value">{activeAlertsCount}</div>
-          <span className="kpi-subtext">2 critical · 5 warnings</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-cyan">
-          <div className="kpi-header-row">
-            <span className="kpi-label">AVAILABLE BEDS</span>
-            <Bed size={16} className="text-cyan" />
-          </div>
-          <div className="kpi-value">{availableBedsCount}</div>
-          <span className="kpi-subtext">{availableBedsCount} of {totalBedsCount} available</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-purple">
-          <div className="kpi-header-row">
-            <span className="kpi-label">CSSD AVAILABILITY</span>
-            <PackageCheck size={16} className="text-purple" />
-          </div>
-          <div className="kpi-value">{cssdAvailabilityPct}%</div>
-          <span className="kpi-subtext">Sterile packs ready</span>
-        </div>
-
-        <div className="admin-kpi-card kpi-pillar-red">
-          <div className="kpi-header-row">
-            <span className="kpi-label">DELAYED WORKFLOWS</span>
-            <Clock size={16} className="text-red" />
-          </div>
-          <div className="kpi-value">{delayedWorkflowsCount}</div>
-          <span className="kpi-subtext">2 requiring attention</span>
+      {/* ── 2. Primary Navigation Tabs Bar ──────────────────── */}
+      <div className="ot-card" style={{ padding: '8px 12px', marginBottom: '20px', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {navTabs.map(t => {
+            const Icon = t.icon;
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`cssd-tab-btn ${isActive ? 'is-active' : ''}`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}
+                type="button"
+              >
+                <Icon size={14} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── 3. Tab Navigation Bar ────────────────────────────── */}
-      <div className="admin-tabs-nav">
-        {navTabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`admin-nav-btn ${activeTab === tab.id ? 'is-active' : ''}`}
-              onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false); }}
-              type="button"
-            >
-              <Icon size={14} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-
-        {/* More dropdown */}
-        <div style={{ position: 'relative' }}>
-          <button
-            className={`admin-nav-btn ${activeTabInMore ? 'is-active' : ''}`}
-            onClick={() => setShowMoreTabs(!showMoreTabs)}
-            type="button"
-          >
-            <Sliders size={14} />
-            <span>{activeTabInMore ? allTabs.find(t => t.id === activeTab)?.label : 'More'}</span>
-          </button>
-          {showMoreTabs && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              marginTop: '4px',
-              background: 'var(--surface-card, #ffffff)',
-              border: '1px solid var(--border-default, #e2e8f0)',
-              borderRadius: 'var(--radius-md, 12px)',
-              boxShadow: 'var(--shadow-lg, 0 10px 28px rgba(10,25,47,0.09))',
-              zIndex: 100,
-              minWidth: '180px',
-              padding: '6px',
-            }}>
-              {moreNavTabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    className={`admin-nav-btn ${activeTab === tab.id ? 'is-active' : ''}`}
-                    style={{ width: '100%', justifyContent: 'flex-start' }}
-                    onClick={() => { setActiveTab(tab.id); setShowMoreTabs(false); }}
-                    type="button"
-                  >
-                    <Icon size={14} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+      {activeTab === 'Reports' ? (
+        <ReportsPage />
+      ) : activeTab === 'Audit' ? (
+        <div className="ot-card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0 }}>CENTRAL SYSTEM AUDIT TRAIL</h2>
+              <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Immutable Event Logs & Security Access Audit</span>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 4. Tab Content Panel ─────────────────────────────── */}
-      <div className="admin-tab-content">
-        {/* TAB: OVERVIEW */}
-        {activeTab === 'Overview' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Executive Operations Dashboard</h2>
-                <span className="tab-subheading">Real-time operational visibility across hospital departments.</span>
-              </div>
-            </div>
-
-            {/* Recent Events + Department Telemetry side by side */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '28px' }}>
-              {/* Recent Workflow Events */}
-              <div className="admin-events-card">
-                <h3>
-                  <Activity size={16} style={{ color: 'var(--status-cyan-text)' }} />
-                  Recent Workflow Events
-                </h3>
-                <table className="events-table">
-                  <thead>
-                    <tr>
-                      <th>TIME</th>
-                      <th>EVENT</th>
-                      <th>DEPARTMENT</th>
-                      <th>RELATED ENTITY</th>
-                      <th>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentEvents.map((evt, idx) => (
-                      <tr key={idx}>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{evt.time}</td>
-                        <td style={{ fontWeight: 500, color: 'var(--text-navy-head)' }}>{evt.event}</td>
-                        <td><Badge variant="blue" size="xs">{evt.dept}</Badge></td>
-                        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--status-cyan-text)' }}>{evt.entity}</td>
-                        <td>
-                          <span className={`status-pill is-${evt.statusType}`}>
-                            <span className={`status-dot ${evt.statusType === 'normal' ? 'green' : evt.statusType === 'active' ? 'cyan' : 'amber'}`} />
-                            {evt.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Quick Department Telemetry */}
-              <div className="dept-telemetry-card">
-                <h3 className="font-display" style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--text-navy-head)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Building2 size={16} style={{ color: 'var(--status-cyan-text)' }} />
-                  Department Telemetry
-                </h3>
-
-                <div className="dept-telemetry-row">
-                  <span className="dept-telemetry-name">Admissions</span>
-                  <span className="status-pill is-normal"><span className="status-dot green" />Normal</span>
-                </div>
-                <div className="dept-telemetry-row">
-                  <span className="dept-telemetry-name">Operating Theatres</span>
-                  <span className="status-pill is-active"><span className="status-dot cyan" />3 Active</span>
-                </div>
-                <div className="dept-telemetry-row">
-                  <span className="dept-telemetry-name">CSSD</span>
-                  <span className="status-pill is-normal"><span className="status-dot green" />94% Ready</span>
-                </div>
-                <div className="dept-telemetry-row">
-                  <span className="dept-telemetry-name">Nursing</span>
-                  <span className="status-pill is-active"><span className="status-dot cyan" />12 Active</span>
-                </div>
-                <div className="dept-telemetry-row">
-                  <span className="dept-telemetry-name">Billing</span>
-                  <span className="status-pill is-normal"><span className="status-dot green" />Normal</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Analytics Summary Cards */}
-            <div className="admin-analytics-grid">
-              {/* Patient Census */}
-              <div className="admin-analytics-card">
-                <h3><Users size={16} /> Patient Census</h3>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Total Patients</span>
-                  <span className="analytics-stat-value">{totalPatientsCount.toLocaleString()}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Admitted</span>
-                  <span className="analytics-stat-value">{todayAdmissionsCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Outpatient</span>
-                  <span className="analytics-stat-value">312</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Discharged (Today)</span>
-                  <span className="analytics-stat-value">24</span>
-                </div>
-              </div>
-
-              {/* Bed Utilization */}
-              <div className="admin-analytics-card">
-                <h3><Bed size={16} /> Hospital Bed Utilization</h3>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Occupied</span>
-                  <span className="analytics-stat-value">{totalBedsCount - availableBedsCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Available</span>
-                  <span className="analytics-stat-value">{availableBedsCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Reserved</span>
-                  <span className="analytics-stat-value">8</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Utilization</span>
-                  <span className="analytics-stat-value">{Math.round(((totalBedsCount - availableBedsCount) / totalBedsCount) * 100)}%</span>
-                </div>
-              </div>
-
-              {/* OT Utilization */}
-              <div className="admin-analytics-card">
-                <h3><Activity size={16} /> OT Utilization</h3>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Scheduled</span>
-                  <span className="analytics-stat-value">{todaySurgeriesCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Completed</span>
-                  <span className="analytics-stat-value">28</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Delayed</span>
-                  <span className="analytics-stat-value">{delayedWorkflowsCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Utilization</span>
-                  <span className="analytics-stat-value">{otUtilizationRate}%</span>
-                </div>
-              </div>
-
-              {/* CSSD */}
-              <div className="admin-analytics-card">
-                <h3><PackageCheck size={16} /> CSSD Sterilization</h3>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Packs Processed</span>
-                  <span className="analytics-stat-value">148</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Ready</span>
-                  <span className="analytics-stat-value">{cssdAvailabilityPct}%</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">In Sterilization</span>
-                  <span className="analytics-stat-value">6</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Expired</span>
-                  <span className="analytics-stat-value">2</span>
-                </div>
-              </div>
-
-              {/* Workflow Performance */}
-              <div className="admin-analytics-card">
-                <h3><Timer size={16} /> Workflow Performance</h3>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Avg. Admission Time</span>
-                  <span className="analytics-stat-value">18 min</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Avg. OT Turnover</span>
-                  <span className="analytics-stat-value">22 min</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Delayed Workflows</span>
-                  <span className="analytics-stat-value">{delayedWorkflowsCount}</span>
-                </div>
-                <div className="analytics-stat-row">
-                  <span className="analytics-stat-label">Alert Resolution</span>
-                  <span className="analytics-stat-value">8 min</span>
-                </div>
-              </div>
-            </div>
+            <Badge variant="purple" size="sm">SECURITY LEVEL 1 AUDIT</Badge>
           </div>
-        )}
 
-        {/* TAB: PATIENTS */}
-        {activeTab === 'Patients' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Authorized Patient Management</h2>
-                <span className="tab-subheading">Central patient records, readiness clearance, and assigned suites</span>
-              </div>
-              <SearchInput
-                placeholder="Search patient code or name..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '260px' }}
-              />
-            </div>
-
-            <table className="admin-table">
+          <div className="table-responsive-wrapper">
+            <table className="cssd-data-table">
               <thead>
                 <tr>
-                  <th>PATIENT CODE</th>
-                  <th>FULL NAME</th>
-                  <th>AGE / GENDER</th>
-                  <th>STATUS</th>
-                  <th>ASSIGNED DOCTOR</th>
-                  <th>BED / ROOM</th>
-                  <th>READINESS</th>
+                  <th style={{ width: '100px' }}>TIME</th>
+                  <th style={{ width: '160px' }}>USER / ACTOR</th>
+                  <th style={{ width: '130px' }}>EVENT TYPE</th>
+                  <th style={{ width: '140px' }}>PATIENT / ENTITY</th>
+                  <th>DESCRIPTION & DETAILS</th>
+                  <th style={{ width: '90px', textAlign: 'right' }}>RESULT</th>
                 </tr>
               </thead>
               <tbody>
-                {dbPatients.map(p => (
-                  <tr key={p.id}>
-                    <td className="font-mono text-cyan">{p.patient_code || p.id?.slice(0, 8)}</td>
-                    <td className="font-semibold">{p.first_name} {p.last_name}</td>
-                    <td>{p.gender}</td>
-                    <td><Badge variant="blue" size="xs">{p.admission_status || 'ADMITTED'}</Badge></td>
-                    <td>Dr. K. Patel</td>
-                    <td>{p.assigned_bed_id ? 'Pre-Op Bay 03' : 'R101-C'}</td>
-                    <td><span className="text-teal font-mono">100% Cleared</span></td>
-                  </tr>
-                ))}
-                {dbPatients.length === 0 && (
-                  <tr>
-                    <td className="font-mono text-cyan">P-1024</td>
-                    <td className="font-semibold">Elena Rostova</td>
-                    <td>58y / Female</td>
-                    <td><Badge variant="blue" size="xs">ADMITTED</Badge></td>
-                    <td>Dr. K. Patel</td>
-                    <td>Pre-Op Bay 03 (R101-C)</td>
-                    <td><span className="text-teal font-mono">100% Cleared</span></td>
-                  </tr>
-                )}
+                {timelineEvents.map((evt, idx) => {
+                  const isDenied = evt.type?.includes('DENIED') || evt.desc?.toLowerCase().includes('denied') || evt.desc?.toLowerCase().includes('held');
+                  return (
+                    <tr key={evt.id || idx}>
+                      <td className="font-mono text-blue font-bold" style={{ fontSize: '11px' }}>{evt.timestamp}</td>
+                      <td><span className="font-bold text-navy-head" style={{ fontSize: '12px' }}>{evt.actor}</span></td>
+                      <td><Badge variant={isDenied ? 'red' : 'teal'} size="xs">{evt.type}</Badge></td>
+                      <td><span className="font-mono" style={{ fontSize: '11px' }}>{evt.patientName} ({evt.patientCode})</span></td>
+                      <td style={{ fontSize: '12px' }}>{evt.desc}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Badge variant={isDenied ? 'red' : 'emerald'} size="xs">{isDenied ? 'DENIED' : 'SUCCESS'}</Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        )}
-
-        {/* TAB: DOCTORS & STAFF */}
-        {activeTab === 'Doctors' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Doctor & Staff Directory</h2>
-                <span className="tab-subheading">Staff allocation, specialization, and availability status</span>
-              </div>
+        </div>
+      ) : activeTab === 'Users' ? (
+        <div className="ot-card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0 }}>PROTOTYPE USER MANAGEMENT</h2>
+              <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Active Hospital Personnel & Role Assignments</span>
             </div>
+            <Button size="sm" variant="primary" icon={Plus} onClick={() => alert('New user invitation form.')}>Add User</Button>
+          </div>
 
-            <table className="admin-table">
+          <div className="table-responsive-wrapper">
+            <table className="cssd-data-table">
               <thead>
                 <tr>
                   <th>NAME</th>
-                  <th>ROLE</th>
+                  <th>EMAIL</th>
+                  <th style={{ width: '130px' }}>ROLE</th>
                   <th>DEPARTMENT</th>
-                  <th>SPECIALIZATION</th>
-                  <th>AVAILABILITY</th>
-                  <th>ACTIVE CASES</th>
+                  <th style={{ width: '100px' }}>STATUS</th>
+                  <th style={{ width: '120px' }}>LAST ACTIVE</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                {staffMembers.map(s => (
-                  <tr key={s.id}>
-                    <td className="font-semibold">{s.name}</td>
-                    <td><Badge variant="purple" size="xs">{s.role}</Badge></td>
-                    <td>{s.dept}</td>
-                    <td>{s.spec}</td>
-                    <td>
-                      <Badge variant={s.avail === 'IN_SURGERY' ? 'amber' : s.avail === 'ON_DUTY' ? 'teal' : 'blue'} size="xs">
-                        {s.avail}
-                      </Badge>
+                {[
+                  { name: 'Dr. Evelyn Vance, DHA', email: 'admin@synchro.health', role: 'ADMIN', dept: 'Executive Command', status: 'ACTIVE', last: 'Just now' },
+                  { name: 'Sarah Jenkins, RN', email: 'frontdesk@synchro.health', role: 'FRONT_DESK', dept: 'Admissions Intake', status: 'ACTIVE', last: '2m ago' },
+                  { name: 'Dr. Rajesh Sharma, MD', email: 'doctor@synchro.health', role: 'DOCTOR', dept: 'General Surgery', status: 'ACTIVE', last: '1m ago' },
+                  { name: 'Maria Vance, BSN', email: 'nurse@synchro.health', role: 'NURSE', dept: 'Central Nursing', status: 'ACTIVE', last: '3m ago' },
+                  { name: 'Priya Nair, CSSD Lead', email: 'cssd@synchro.health', role: 'CSSD', dept: 'Sterile Processing', status: 'ACTIVE', last: '5m ago' },
+                  { name: 'Dr. James Gomez, MD', email: 'ot@synchro.health', role: 'OT_MANAGER', dept: 'OT Management', status: 'ACTIVE', last: '4m ago' },
+                ].map((u, i) => (
+                  <tr key={i}>
+                    <td><span className="font-bold text-navy-head" style={{ fontSize: '13px' }}>{u.name}</span></td>
+                    <td className="font-mono" style={{ fontSize: '11px' }}>{u.email}</td>
+                    <td><Badge variant="purple" size="xs">{u.role}</Badge></td>
+                    <td style={{ fontSize: '12px' }}>{u.dept}</td>
+                    <td><Badge variant="teal" size="xs">{u.status}</Badge></td>
+                    <td className="font-mono text-muted" style={{ fontSize: '11px' }}>{u.last}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <Button size="xs" variant="secondary" onClick={() => alert(`Status toggled for ${u.name}.`)}>Deactivate</Button>
                     </td>
-                    <td style={{ fontFamily: 'var(--font-mono)' }}>{s.patients} cases</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-
-        {/* TAB: DEPARTMENTS */}
-        {activeTab === 'Departments' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Hospital Departments</h2>
-                <span className="tab-subheading">Operational pillars and headcount breakdown</span>
+        </div>
+      ) : (
+        <>
+          {/* ── 3. Top 8 Executive KPI Cards Grid ────────────────── */}
+          <div className="admin-kpi-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
+            <div className="admin-kpi-card kpi-pillar-blue">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">TOTAL PATIENTS</span>
+                <Users size={16} className="text-blue" />
               </div>
+              <div className="kpi-value font-display">{totalPatientsCount.toLocaleString()}</div>
+              <span className="kpi-subtext font-mono">Active clinical census</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              {[
-                { name: 'Admissions & Intake', code: 'ADM', pillar: 'blue', staff: 14, head: 'M. Vance' },
-                { name: 'Operating Theatres', code: 'OT', pillar: 'indigo', staff: 32, head: 'Dr. K. Patel' },
-                { name: 'CSSD Sterilization', code: 'CSSD', pillar: 'teal', staff: 18, head: 'S. Rao' },
-                { name: 'Billing & Accounts', code: 'BILL', pillar: 'purple', staff: 12, head: 'R. Sharma' }
-              ].map(d => (
-                <div key={d.code} style={{
-                  padding: '24px',
-                  background: 'var(--surface-card, #ffffff)',
-                  border: '1px solid var(--border-default, #e2e8f0)',
-                  borderRadius: 'var(--radius-lg, 16px)',
-                  boxShadow: 'var(--shadow-xs)',
-                }}>
-                  <Badge variant={d.pillar} size="sm">{d.code}</Badge>
-                  <h3 className="font-display" style={{ fontSize: '1rem', color: 'var(--text-navy-head)', margin: '12px 0 6px 0' }}>{d.name}</h3>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    <span>Head: <strong style={{ color: 'var(--text-secondary)' }}>{d.head}</strong></span> · <span>Staff: <strong style={{ color: 'var(--text-secondary)' }}>{d.staff} members</strong></span>
-                  </div>
-                </div>
-              ))}
+            <div className="admin-kpi-card kpi-pillar-indigo">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">TODAY'S ADMISSIONS</span>
+                <UserCheck size={16} className="text-indigo" />
+              </div>
+              <div className="kpi-value font-display">{todayAdmissionsCount}</div>
+              <span className="kpi-subtext font-mono">↑ 12% vs yesterday</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-teal">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">ACTIVE SURGERIES</span>
+                <Activity size={16} className="text-teal" />
+              </div>
+              <div className="kpi-value font-display">{activeSurgeriesCount}</div>
+              <span className="kpi-subtext font-mono">6 active • 3 scheduled</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-emerald">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">OT UTILIZATION</span>
+                <BarChart3 size={16} className="text-emerald" />
+              </div>
+              <div className="kpi-value font-display">{otUtilizationRate}%</div>
+              <span className="kpi-subtext font-mono">↑ 4.2% vs target 80%</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-purple">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">CSSD READY</span>
+                <PackageCheck size={16} className="text-purple" />
+              </div>
+              <div className="kpi-value font-display">{cssdReadinessPct}%</div>
+              <span className="kpi-subtext font-mono">{cssdBreakdown.sterile} sterile • {cssdBreakdown.expired} expired</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-amber">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">ACTIVE ALERTS</span>
+                <AlertTriangle size={16} className="text-amber" />
+              </div>
+              <div className="kpi-value font-display">{activeAlertsCount}</div>
+              <span className="kpi-subtext font-mono">{criticalAlertsCount} critical • {warningAlertsCount} warnings</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-cyan">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">AVAILABLE BEDS</span>
+                <Bed size={16} className="text-cyan" />
+              </div>
+              <div className="kpi-value font-display">{availableBedsCount}</div>
+              <span className="kpi-subtext font-mono">{availableBedsCount} of {totalBedsCount} available</span>
+            </div>
+
+            <div className="admin-kpi-card kpi-pillar-red">
+              <div className="kpi-header-row">
+                <span className="kpi-label font-mono">DELAYED WORKFLOWS</span>
+                <AlertOctagon size={16} className="text-red" />
+              </div>
+              <div className="kpi-value font-display">{delayedWorkflowsCount}</div>
+              <span className="kpi-subtext font-mono">Turnover & CSSD holds</span>
             </div>
           </div>
-        )}
 
-        {/* TAB: ADMISSIONS */}
-        {activeTab === 'Admissions' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Admissions & Intake Log</h2>
-                <span className="tab-subheading">Pre-op patient intake, room assignments, and clearance status</span>
-              </div>
-            </div>
-
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ADMISSION ID</th>
-                  <th>PATIENT</th>
-                  <th>ADMISSION TYPE</th>
-                  <th>REASON</th>
-                  <th>ROOM / BED</th>
-                  <th>STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="font-mono text-cyan">ADM-2026-9921</td>
-                  <td>Elena Rostova</td>
-                  <td><Badge variant="blue" size="xs">ELECTIVE</Badge></td>
-                  <td>Laparoscopic Cholecystectomy</td>
-                  <td>Pre-Op Bay 03 (R101-C)</td>
-                  <td><Badge variant="teal" size="xs">ADMITTED</Badge></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* TAB: ROOMS & BEDS */}
-        {activeTab === 'RoomsBeds' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Visual Rooms & Beds Occupancy</h2>
-                <span className="tab-subheading">Live bed utilization across Pavilion wings</span>
-              </div>
-            </div>
-
-            <div className="occupancy-grid">
-              {[
-                { room: 'Pre-Op Bay 01', wing: 'Pavilion A', beds: [{ num: 'R101-A', status: 'OCCUPIED', patient: 'Elena Rostova' }, { num: 'R101-B', status: 'AVAILABLE', patient: null }] },
-                { room: 'Pre-Op Bay 02', wing: 'Pavilion A', beds: [{ num: 'R102-A', status: 'AVAILABLE', patient: null }, { num: 'R102-B', status: 'OCCUPIED', patient: 'Viktor Vance' }] },
-                { room: 'Post-Op Recovery', wing: 'Pavilion B', beds: [{ num: 'PACU-01', status: 'OCCUPIED', patient: 'Sarah Jenkins' }, { num: 'PACU-02', status: 'AVAILABLE', patient: null }] }
-              ].map((r, idx) => (
-                <div key={idx} className="occupancy-room-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="font-semibold" style={{ color: 'var(--text-navy-head)' }}>{r.room}</span>
-                    <span className="font-mono" style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>{r.wing}</span>
-                  </div>
-
-                  <div className="beds-row">
-                    {r.beds.map(b => (
-                      <div key={b.num} className={`bed-chip ${b.status === 'OCCUPIED' ? 'is-occupied' : 'is-available'}`}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                          <span className="font-mono font-semibold">{b.num}</span>
-                          <span className="font-mono" style={{ fontSize: '0.65rem', color: b.status === 'OCCUPIED' ? 'var(--status-cyan-text)' : 'var(--status-green-text)' }}>{b.status}</span>
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{b.patient || 'Vacant'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB: OPERATING THEATRES */}
-        {activeTab === 'OT' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Real-Time Operating Theatre Status</h2>
-                <span className="tab-subheading">Surgical suite status telemetry and active procedures</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              {activeTheatres.map(ot => (
-                <div key={ot.id || ot.suite_code} style={{
-                  padding: '24px',
-                  background: 'var(--surface-card, #ffffff)',
-                  border: '1px solid var(--border-default, #e2e8f0)',
-                  borderRadius: 'var(--radius-lg, 16px)',
-                  boxShadow: 'var(--shadow-xs)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--status-cyan-text)' }}>{ot.suite_code}</span>
-                    <Badge variant={ot.status === 'IN_SURGERY' ? 'indigo' : ot.status === 'READY' ? 'teal' : 'amber'} size="xs">
-                      {ot.status}
-                    </Badge>
-                  </div>
-                  <div style={{ marginTop: '14px', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-                    <div>Specialty: <strong style={{ color: 'var(--text-navy-head)' }}>{ot.specialty || 'General Surgery'}</strong></div>
-                    <div style={{ marginTop: '4px' }}>Surgeon: <strong style={{ color: 'var(--text-navy-head)' }}>Dr. K. Patel</strong></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB: CSSD */}
-        {activeTab === 'CSSD' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">CSSD Sterile Pack Inventory</h2>
-                <span className="tab-subheading">Autoclave sterilization cycles and pack lifecycle tracking</span>
-              </div>
-            </div>
-
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>PACK CODE</th>
-                  <th>PACK NAME</th>
-                  <th>STERILIZATION STATUS</th>
-                  <th>LOCATION</th>
-                  <th>ASSIGNED OT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dbPacks.map(p => (
-                  <tr key={p.id}>
-                    <td className="font-mono text-cyan">{p.pack_code}</td>
-                    <td className="font-semibold">{p.pack_name}</td>
-                    <td><Badge variant={p.status === 'STERILE' ? 'teal' : 'amber'} size="xs">{p.status}</Badge></td>
-                    <td>{p.current_location}</td>
-                    <td>{p.assigned_theatre_id ? 'OT-02' : 'Unassigned'}</td>
-                  </tr>
-                ))}
-                {dbPacks.length === 0 && (
-                  <tr>
-                    <td className="font-mono text-cyan">CSSD-00428</td>
-                    <td className="font-semibold">Laparoscopic Cholecystectomy Pack B</td>
-                    <td><Badge variant="teal" size="xs">STERILE</Badge></td>
-                    <td>CSSD Sterile Bay 2</td>
-                    <td>OT-02</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* TAB: BILLING OVERVIEW */}
-        {activeTab === 'Billing' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Billing Overview & Revenue Pipeline</h2>
-                <span className="tab-subheading">Procedure charges, issued invoices, and revenue metrics</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div style={{
-                padding: '20px',
-                background: 'var(--surface-card)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-default)',
-                boxShadow: 'var(--shadow-xs)',
-              }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TOTAL REVENUE (MONTH)</span>
-                <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--status-green-text)', marginTop: '8px' }}>
-                  ₹{(billingData?.stats?.totalRevenue || 1245000).toLocaleString()}
-                </div>
-              </div>
-              <div style={{
-                padding: '20px',
-                background: 'var(--surface-card)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-default)',
-                boxShadow: 'var(--shadow-xs)',
-              }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PENDING CHARGES</span>
-                <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--status-amber-text)', marginTop: '8px' }}>
-                  ₹{(billingData?.stats?.pendingRevenue || 340000).toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB: WORKFLOW */}
-        {activeTab === 'Workflow' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Cross-Department Workflow Bottlenecks</h2>
-                <span className="tab-subheading">Telemetry stream and handoff delay analysis</span>
-              </div>
-            </div>
-            <WorkflowTimeline />
-          </div>
-        )}
-
-        {/* TAB: ALERTS */}
-        {activeTab === 'Alerts' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Active Hospital Alerts</h2>
-                <span className="tab-subheading">Operational bottleneck warnings and resolution triggers</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{
-                padding: '20px',
-                background: 'var(--status-red-bg)',
-                border: '1px solid var(--status-red-border)',
-                borderRadius: 'var(--radius-lg)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '16px',
-              }}>
-                <div>
-                  <Badge variant="red" size="xs">CRITICAL</Badge>
-                  <h4 className="font-display" style={{ margin: '8px 0 4px 0', color: 'var(--text-navy-head)' }}>Pack #CSSD-00421 Autoclave Cooldown Delay</h4>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 0 }}>OT-02 blocked due to sterilization cooldown. Re-assign Pack #CSSD-00428.</p>
-                </div>
-                <Button variant="primary" size="sm">Resolve Alert</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB: ANALYTICS */}
-        {activeTab === 'Analytics' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Actionable Delay Analytics — "WHERE ARE WE LOSING TIME?"</h2>
-                <span className="tab-subheading">Root-cause surgical handoff delay analysis and benchmark efficiency</span>
-              </div>
-            </div>
-            <ActionableInsights />
-          </div>
-        )}
-
-        {/* TAB: REPORTS */}
-        {activeTab === 'Reports' && (
-          <ReportsPage />
-        )}
-
-        {/* TAB: AUDIT LOGS */}
-        {activeTab === 'AuditLogs' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">Operational Audit Trail</h2>
-                <span className="tab-subheading">Immutable log of Who, What, When, Related Record, and Action</span>
-              </div>
-
-              <select 
-                className="form-input" 
-                style={{ width: 'auto' }}
-                value={auditFilter}
-                onChange={e => setAuditFilter(e.target.value)}
-              >
-                <option value="ALL">All Actions</option>
-                <option value="CSSD_ASSIGNED_PACK">CSSD Assigned Pack</option>
-                <option value="DOCTOR_ACKNOWLEDGED_ALERT">Doctor Acknowledged Alert</option>
-                <option value="NURSE_MARKED_PATIENT_READY">Nurse Marked Patient Ready</option>
-                <option value="FRONT_DESK_ADMITTED_PATIENT">Front Desk Admitted Patient</option>
-                <option value="ADMIN_CHANGED_ROLE">Admin Changed Role</option>
-              </select>
-            </div>
-
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>TIMESTAMP (WHEN)</th>
-                  <th>USER (WHO)</th>
-                  <th>ROLE</th>
-                  <th>ACTION</th>
-                  <th>RELATED RECORD</th>
-                  <th>DETAILS (WHAT)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.map(log => (
-                  <tr key={log.id}>
-                    <td className="font-mono text-muted">{log.when}</td>
-                    <td className="font-semibold">{log.who}</td>
-                    <td><Badge variant="purple" size="xs">{log.role}</Badge></td>
-                    <td><Badge variant="teal" size="xs">{log.action}</Badge></td>
-                    <td className="font-mono text-cyan">{log.relatedRecord}</td>
-                    <td>{log.what}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* TAB: SETTINGS */}
-        {activeTab === 'Settings' && (
-          <div>
-            <div className="tab-section-header">
-              <div>
-                <h2 className="tab-heading font-display">System Configuration & Security Controls</h2>
-                <span className="tab-subheading">RBAC role permission matrix, notification adapters, and HIPAA safeguards</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{
-                padding: '24px',
-                background: 'var(--surface-card)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border-default)',
-                boxShadow: 'var(--shadow-xs)',
-              }}>
-                <h3 className="font-display" style={{ fontSize: 'var(--text-md)', color: 'var(--text-navy-head)', margin: '0 0 12px 0' }}>
-                  RBAC Operational Visibility Scope
+          {/* ── 4. Patient Operations & Workflow Funnel ──────────── */}
+          <div className="ot-card" style={{ padding: '20px', marginBottom: '20px', backgroundColor: '#ffffff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} className="text-blue" />
+                <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                  PATIENT OPERATIONS & WORKFLOW FUNNEL
                 </h3>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  Hospital Administrator role possesses the broadest operational authority across all 15 operational channels.
-                </p>
+              </div>
+              <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Derived from Live Centralized Workflow State</span>
+            </div>
+
+            {/* Funnel Stepper Strip */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              {[
+                { label: 'REGISTERED', count: funnel.registered, color: '#475569', bg: '#f1f5f9' },
+                { label: 'ADMITTED', count: funnel.admitted, color: '#0284c7', bg: '#e0f2fe' },
+                { label: 'ASSESSED', count: funnel.assessed, color: '#7c3aed', bg: '#f5f3ff' },
+                { label: 'PRE-OP', count: funnel.preOp, color: '#b45309', bg: '#fffbe6' },
+                { label: 'OT READY', count: funnel.otReady, color: '#15803d', bg: '#dcfce7' },
+                { label: 'IN OT', count: funnel.inOt, color: '#b91c1c', bg: '#fee2e2' },
+                { label: 'RECOVERY', count: funnel.recovery, color: '#4338ca', bg: '#e0e7ff' },
+                { label: 'DISCHARGE', count: funnel.discharge, color: '#047857', bg: '#ecfdf5' },
+              ].map((st, i, arr) => (
+                <React.Fragment key={st.label}>
+                  <div style={{
+                    flex: 1,
+                    padding: '12px 10px',
+                    borderRadius: '10px',
+                    backgroundColor: st.bg,
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <span className="font-mono" style={{ fontSize: '9px', fontWeight: 800, color: st.color }}>{st.label}</span>
+                    <span className="font-display font-bold" style={{ fontSize: '18px', color: st.color }}>{st.count}</span>
+                  </div>
+                  {i < arr.length - 1 && <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 5. OT & CSSD Performance Double Grid ───────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            {/* OT Performance */}
+            <div className="ot-card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={18} className="text-teal" />
+                  <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                    OPERATING THEATRE UTILIZATION BY SUITE
+                  </h3>
+                </div>
+                <Badge variant="teal" size="xs">Avg: {otUtilizationRate}%</Badge>
+              </div>
+
+              {/* OT Bar Chart Representation */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { suite: 'OT-01', spec: 'Orthopedics', util: 89 },
+                  { suite: 'OT-02', spec: 'General Surgery', util: 82 },
+                  { suite: 'OT-03', spec: 'Sports Medicine', util: 74 },
+                  { suite: 'OT-04', spec: 'Trauma & Emergency', util: 91 },
+                  { suite: 'OT-05', spec: 'ENT & Head/Neck', util: 78 },
+                  { suite: 'OT-06', spec: 'Neurosurgery Core', util: 88 },
+                  { suite: 'OT-07', spec: 'Urology Endoscopy', util: 80 },
+                  { suite: 'OT-08', spec: 'Trauma Reserve B', util: 85 },
+                ].map(ot => (
+                  <div key={ot.suite} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                    <span className="font-bold text-navy-head" style={{ width: '50px' }}>{ot.suite}</span>
+                    <span style={{ width: '130px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ot.spec}</span>
+                    <div style={{ flex: 1, height: '14px', backgroundColor: '#f1f5f9', borderRadius: '7px', overflow: 'hidden', display: 'flex' }}>
+                      <div style={{
+                        width: `${ot.util}%`,
+                        backgroundColor: ot.util >= 85 ? '#0d9488' : ot.util >= 75 ? '#2563eb' : '#d97706',
+                        borderRadius: '7px',
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <span className="font-bold" style={{ width: '35px', textAlign: 'right', color: ot.util >= 80 ? '#15803d' : '#b45309' }}>{ot.util}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CSSD Inventory Pressure */}
+            <div className="ot-card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PackageCheck size={18} className="text-purple" />
+                  <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                    CSSD STERILE PACK LIFECYCLE DISTRIBUTION
+                  </h3>
+                </div>
+                <Badge variant="purple" size="xs">{cssdReadinessPct}% Ready</Badge>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                  <span className="font-mono text-muted" style={{ fontSize: '10px' }}>STERILE & AVAILABLE</span>
+                  <div className="font-display font-bold text-teal" style={{ fontSize: '20px' }}>{cssdBreakdown.sterile}</div>
+                </div>
+
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <span className="font-mono text-muted" style={{ fontSize: '10px' }}>RESERVED FOR PATIENT</span>
+                  <div className="font-display font-bold text-blue" style={{ fontSize: '20px' }}>{cssdBreakdown.reserved}</div>
+                </div>
+
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                  <span className="font-mono text-muted" style={{ fontSize: '10px' }}>IN DECON / STERILIZING</span>
+                  <div className="font-display font-bold text-amber" style={{ fontSize: '20px' }}>{cssdBreakdown.reprocessing}</div>
+                </div>
+
+                <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5' }}>
+                  <span className="font-mono text-muted" style={{ fontSize: '10px' }}>EXPIRED / QUARANTINED</span>
+                  <div className="font-display font-bold text-red" style={{ fontSize: '20px' }}>{cssdBreakdown.expired}</div>
+                </div>
+              </div>
+
+              {/* Progress Bar Distribution */}
+              <span className="font-mono text-muted" style={{ fontSize: '10px', fontWeight: 700 }}>INVENTORY LIFECYCLE RATIOS:</span>
+              <div style={{ height: '18px', backgroundColor: '#f1f5f9', borderRadius: '9px', overflow: 'hidden', display: 'flex', marginTop: '6px' }}>
+                <div style={{ width: '60%', backgroundColor: '#16a34a' }} title="Sterile (60%)" />
+                <div style={{ width: '15%', backgroundColor: '#2563eb' }} title="Reserved (15%)" />
+                <div style={{ width: '10%', backgroundColor: '#0284c7' }} title="In OT (10%)" />
+                <div style={{ width: '10%', backgroundColor: '#d97706' }} title="Reprocessing (10%)" />
+                <div style={{ width: '5%', backgroundColor: '#dc2626' }} title="Expired (5%)" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontFamily: 'var(--font-mono)', marginTop: '4px', color: 'var(--text-muted)' }}>
+                <span>■ Sterile (60%)</span>
+                <span>■ Reserved (15%)</span>
+                <span>■ In OT (10%)</span>
+                <span>■ Reprocessing (10%)</span>
+                <span>■ Expired (5%)</span>
               </div>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* ── 6. Bottlenecks & Department Performance Scorecard ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            {/* Current Bottlenecks */}
+            <div className="ot-card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldAlert size={18} className="text-red" />
+                  <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                    CURRENT WORKFLOW BOTTLENECKS
+                  </h3>
+                </div>
+                <Badge variant="red" size="xs">3 Actionable</Badge>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fff5f5', border: '1px solid #fca5a5' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span className="font-mono font-bold text-red" style={{ fontSize: '11px' }}>1. CSSD STERILIZATION HOLD</span>
+                    <Badge variant="red" size="xs">HIGH SEVERITY</Badge>
+                  </div>
+                  <p style={{ fontSize: '12px', margin: 0, fontWeight: 500, color: 'var(--text-primary)' }}>
+                    Sterile pack CSSD-GEN-017 expired in Storage Vault B. Backup pack CSSD-LAP-021 verified.
+                  </p>
+                </div>
+
+                <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span className="font-mono font-bold text-amber" style={{ fontSize: '11px' }}>2. OT-08 TURNOVER DELAY</span>
+                    <Badge variant="amber" size="xs">+3m LAG</Badge>
+                  </div>
+                  <p style={{ fontSize: '12px', margin: 0, fontWeight: 500, color: 'var(--text-primary)' }}>
+                    OT-08 turnover elapsed 28 min vs 25 min benchmark. Sanitation technician assigned.
+                  </p>
+                </div>
+
+                <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span className="font-mono font-bold text-blue" style={{ fontSize: '11px' }}>3. SURGICAL CONSENT PENDING</span>
+                    <Badge variant="blue" size="xs">PRE-OP HOLD</Badge>
+                  </div>
+                  <p style={{ fontSize: '12px', margin: 0, fontWeight: 500, color: 'var(--text-primary)' }}>
+                    Patient Priya Sharma (P-1048) requires digital consent sign-off before OT transfer.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Department Performance Scorecard */}
+            <div className="ot-card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Building2 size={18} className="text-cyan" />
+                  <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                    DEPARTMENT PERFORMANCE SCORECARD
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="font-mono text-muted" style={{ fontSize: '10px' }}>SYNCHRO SCORE:</span>
+                  <span className="font-mono font-bold text-teal" style={{ fontSize: '14px' }}>94%</span>
+                </div>
+              </div>
+
+              <table className="cssd-data-table" style={{ fontSize: '11px' }}>
+                <thead>
+                  <tr>
+                    <th>DEPARTMENT</th>
+                    <th style={{ width: '80px', textAlign: 'center' }}>LOAD</th>
+                    <th style={{ width: '90px', textAlign: 'center' }}>RATING</th>
+                    <th style={{ width: '70px', textAlign: 'center' }}>ISSUES</th>
+                    <th style={{ width: '90px', textAlign: 'right' }}>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { dept: 'Admissions & Intake', load: '72%', rating: 'Good', issues: 2, status: 'Normal', variant: 'teal' },
+                    { dept: 'Nursing & Wards', load: '88%', rating: 'High', issues: 1, status: 'Normal', variant: 'blue' },
+                    { dept: 'CSSD Sterilization', load: '91%', rating: 'High', issues: 3, status: 'Attention', variant: 'amber' },
+                    { dept: 'Operating Theatres', load: '84%', rating: 'High', issues: 1, status: 'Normal', variant: 'indigo' },
+                    { dept: 'PACU & Recovery', load: '80%', rating: 'Optimal', issues: 0, status: 'Optimal', variant: 'teal' },
+                    { dept: 'Billing & Accounts', load: '92%', rating: 'Optimal', issues: 0, status: 'Optimal', variant: 'purple' },
+                  ].map(row => (
+                    <tr key={row.dept}>
+                      <td className="font-bold text-navy-head">{row.dept}</td>
+                      <td className="font-mono" style={{ textAlign: 'center' }}>{row.load}</td>
+                      <td className="font-mono" style={{ textAlign: 'center' }}>{row.rating}</td>
+                      <td className="font-mono" style={{ textAlign: 'center' }}>{row.issues}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Badge variant={row.variant} size="xs">{row.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── 7. Today's Operational Insight & Action Recommendations ── */}
+          <div className="ot-card" style={{ padding: '20px', marginBottom: '20px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <Sparkles size={18} className="text-purple" />
+              <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                TODAY'S OPERATIONAL INSIGHT & EXECUTIVE ACTION PLAN
+              </h3>
+            </div>
+
+            <p className="font-sans" style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)', marginBottom: '14px', fontWeight: 500 }}>
+              {dynamicInsight}
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <Button size="sm" variant="teal" icon={CheckCircle2} onClick={() => alert('Replacement pack CSSD-LAP-021 verified & assigned.')}>
+                Verify CSSD-LAP-021
+              </Button>
+              <Button size="sm" variant="secondary" icon={Clock} onClick={() => alert('OT-08 turnover status inspected.')}>
+                Review OT-08 Turnover
+              </Button>
+              <Button size="sm" variant="secondary" icon={UserCheck} onClick={() => alert('Digital consent request dispatched for P-1048.')}>
+                Complete Consent P-1048
+              </Button>
+              <Button size="sm" variant="primary" icon={Flame} onClick={() => alert('Reserve OT-08 prepped for STAT emergency case.')}>
+                Allocate Reserve OT-08
+              </Button>
+            </div>
+          </div>
+
+          {/* ── 8. Live Operational Events Audit Stream Table ──────── */}
+          <div className="ot-card" style={{ padding: '20px', backgroundColor: '#ffffff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} className="text-blue" />
+                <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '15px' }}>
+                  LIVE OPERATIONAL WORKFLOW AUDIT STREAM
+                </h3>
+              </div>
+              <span className="font-mono text-muted" style={{ fontSize: '11px' }}>{timelineEvents.length} Events Logged Today</span>
+            </div>
+
+            <div className="table-responsive-wrapper">
+              <table className="cssd-data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '100px' }}>TIME</th>
+                    <th>EVENT TYPE</th>
+                    <th style={{ width: '150px' }}>PATIENT / ENTITY</th>
+                    <th style={{ width: '140px' }}>DEPARTMENT</th>
+                    <th style={{ width: '110px' }}>STATUS</th>
+                    <th>IMPACT & DESCRIPTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timelineEvents.slice(0, 8).map(evt => (
+                    <tr key={evt.id}>
+                      <td className="font-mono" style={{ fontSize: '11px' }}>{evt.timestamp}</td>
+                      <td>
+                        <span className="font-mono font-bold" style={{ fontSize: '11px', color: 'var(--text-navy-head)' }}>
+                          {evt.type ? evt.type.replace(/_/g, ' ') : 'WORKFLOW EVENT'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600 }}>{evt.patientName || 'System'}</span>
+                          <span className="font-mono text-muted" style={{ fontSize: '9px' }}>{evt.patientCode || ''}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge variant="blue" size="xs">{evt.actor || 'Operations'}</Badge>
+                      </td>
+                      <td>
+                        <Badge variant="teal" size="xs">Success</Badge>
+                      </td>
+                      <td style={{ fontSize: '11px', color: 'var(--text-primary)' }}>
+                        {evt.desc}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

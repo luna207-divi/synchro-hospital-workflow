@@ -17,34 +17,62 @@ import {
   Send,
   ShieldAlert,
   History,
-  Tag
+  Tag,
+  User,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import './AlertDrawer.css';
 
 /**
- * Right-Side Detail Drawer for Fast Hospital Staff Response
+ * Detailed Alert Inspection & Workflow Action Drawer
  */
-export const AlertDrawer = ({ alert, onClose, onResolve }) => {
+export const AlertDrawer = ({ alert, onClose, workflow }) => {
   const [isResolved, setIsResolved] = useState(alert?.status === 'Resolved');
   const [actionDone, setActionDone] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
 
   if (!alert) return null;
 
   const handleResolveClick = () => {
     setIsResolved(true);
-    if (onResolve) onResolve(alert.id);
+    if (workflow?.resolveAlert) {
+      workflow.resolveAlert(alert.id);
+    }
+    setActionMessage({ type: 'success', text: `Alert ${alert.id} resolved. Workflow updated.` });
   };
 
   const handleActionClick = () => {
     setActionDone(true);
+
+    // Context automatic resolution logic
+    if (alert.alert_type === 'EXPIRED_STERILE_PACK' && workflow?.markPackReady) {
+      workflow.markPackReady('CSSD-LAP-021');
+      setActionMessage({ type: 'success', text: 'Replacement sterile pack CSSD-LAP-021 dispatched. Expired pack quarantined.' });
+    } else if (alert.alert_type === 'CONSENT_PENDING' && workflow?.patients) {
+      // Sign consent
+      const p = workflow.patients.find(pt => pt.full_name === alert.patientName || pt.patient_code === alert.patientId);
+      if (p && workflow.advancePatientWorkflow) {
+        workflow.advancePatientWorkflow(p.id || p.patient_code);
+      }
+      setActionMessage({ type: 'success', text: 'Digital consent form signed in EMR. Patient clearance updated.' });
+    } else if (alert.alert_type === 'TURNOVER_DELAY') {
+      setActionMessage({ type: 'success', text: 'Secondary sanitation technician dispatched to OT-08.' });
+    } else {
+      setActionMessage({ type: 'success', text: 'Mitigation protocol executed.' });
+    }
+
+    if (workflow?.resolveAlert) {
+      workflow.resolveAlert(alert.id);
+      setIsResolved(true);
+    }
   };
 
   return (
     <div className="ot-alert-drawer-backdrop" onClick={onClose}>
       <div className="ot-alert-drawer-panel" onClick={(e) => e.stopPropagation()}>
-        {/* Drawer Header */}
+        {/* Header */}
         <div className="drawer-header">
           <div className="drawer-header-meta">
             <span className="drawer-alert-id font-mono">{alert.id}</span>
@@ -58,6 +86,26 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
 
         {/* Scrollable Body */}
         <div className="drawer-body-content">
+          {/* Action Message Banner */}
+          {actionMessage && (
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: actionMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
+              color: actionMessage.type === 'success' ? '#15803d' : '#b91c1c',
+              border: `1px solid ${actionMessage.type === 'success' ? '#86efac' : '#fca5a5'}`,
+              marginBottom: '14px'
+            }}>
+              <CheckCircle2 size={16} />
+              <span>{actionMessage.text}</span>
+            </div>
+          )}
+
           {/* Title & Severity Banner */}
           <div className={`drawer-severity-banner severity-bg-${alert.severity.toLowerCase()}`}>
             <div className="severity-icon-zone">
@@ -79,7 +127,7 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
           </div>
 
           {/* Quick Info Grid */}
-          <div className="drawer-info-grid">
+          <div className="drawer-info-grid font-mono">
             <div className="drawer-info-cell">
               <span className="cell-label">DEPARTMENT</span>
               <div className="cell-val">
@@ -96,9 +144,16 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
               <span className="cell-label">RELATED ENTITY</span>
               <span className="cell-val font-mono">{alert.relatedEntity}</span>
             </div>
+
+            {alert.patientName && (
+              <div className="drawer-info-cell full-width">
+                <span className="cell-label">AFFECTED PATIENT</span>
+                <span className="cell-val font-bold text-navy-head">{alert.patientName} ({alert.patientId || 'MRN-1042'})</span>
+              </div>
+            )}
           </div>
 
-          {/* Root Cause / Reason Section */}
+          {/* Diagnostic Root Cause */}
           <div className="drawer-section">
             <h3 className="section-title">
               <ShieldAlert size={14} className="section-icon text-red" />
@@ -113,7 +168,7 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
           <div className="drawer-section">
             <h3 className="section-title">
               <Sparkles size={14} className="section-icon text-purple" />
-              <span>Recommended Action</span>
+              <span>Recommended Action & Mitigation Protocol</span>
             </h3>
             <div className="ai-recommendation-box">
               <div className="ai-rec-header">
@@ -128,7 +183,7 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
                   variant={alert.severity === 'Critical' ? 'danger' : 'primary'}
                   icon={actionDone ? Check : ArrowRight}
                   onClick={handleActionClick}
-                  disabled={actionDone}
+                  disabled={actionDone || isResolved}
                 >
                   {actionDone ? 'Protocol Dispatched' : alert.primaryActionLabel || 'Execute Action'}
                 </Button>
@@ -136,18 +191,18 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
             </div>
           </div>
 
-          {/* Workflow Chronological Timeline */}
+          {/* Timeline */}
           <div className="drawer-section">
             <h3 className="section-title">
               <History size={14} className="section-icon text-blue" />
-              <span>Workflow Audit Timeline</span>
+              <span>Incident Event Timeline</span>
             </h3>
             <div className="drawer-timeline-list">
-              {alert.timeline && alert.timeline.map((step, i) => (
+              {(alert.timeline || []).map((step, i) => (
                 <div key={i} className="drawer-timeline-item">
                   <div className="timeline-dot-col">
                     <div className={`timeline-node-dot ${step.isFlagged ? 'dot-flagged' : 'dot-normal'}`} />
-                    {i < alert.timeline.length - 1 && <div className="timeline-line-connector" />}
+                    {i < (alert.timeline || []).length - 1 && <div className="timeline-line-connector" />}
                   </div>
                   <div className="timeline-text-col">
                     <div className="timeline-header-line">
@@ -162,9 +217,9 @@ export const AlertDrawer = ({ alert, onClose, onResolve }) => {
           </div>
         </div>
 
-        {/* Drawer Footer Actions */}
+        {/* Footer Actions */}
         <div className="drawer-footer">
-          <div className="drawer-footer-left">
+          <div className="drawer-footer-left" style={{ display: 'flex', gap: '8px' }}>
             <Button
               size="sm"
               variant="secondary"

@@ -65,7 +65,148 @@
 .admissions-header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 12px;
+}
+
+/* Attention Required Summary Banner */
+.admissions-attention-banner {
+  background-color: #ffffff;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.attention-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.attention-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attention-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-navy-head, #0f172a);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.attention-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.attention-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  line-height: 1;
+}
+
+.attention-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-amber { background-color: #d97706; }
+.dot-blue { background-color: #2563eb; }
+.dot-purple { background-color: #7c3aed; }
+.dot-green { background-color: #16a34a; }
+
+.item-amber { background-color: #fffbe6; border: 1px solid #fef08a; color: #92400e; }
+.item-blue { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.item-red { background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.item-purple { background-color: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; }
+.item-green { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+
+.attention-count {
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* 9-Column Operational Statistics Container */
+.admissions-stats-container {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  background-color: #ffffff;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.admissions-stat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-right: 1px solid var(--border-subtle, #f1f5f9);
+  text-align: center;
+}
+
+.admissions-stat-cell.stat-cell-last {
+  border-right: none;
+}
+
+.admissions-stat-cell .stat-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.admissions-stat-cell .stat-number {
+  font-family: var(--font-display, sans-serif);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.admissions-stat-cell .stat-subtext {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (max-width: 1280px) {
+  .admissions-stats-container {
+    grid-template-columns: repeat(5, 1fr);
+    row-gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admissions-stats-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .admissions-stats-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* KPI Summary Row */

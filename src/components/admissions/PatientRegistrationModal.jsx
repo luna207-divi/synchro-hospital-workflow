@@ -1,841 +1,607 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, CheckCircle2, User, Phone, ShieldCheck, 
   Building2, Stethoscope, Bed, ArrowRight, ArrowLeft, Sparkles,
-  FileText, CreditCard, AlertCircle, Upload, Check, FileCheck
+  FileText, CreditCard, AlertCircle, Upload, Check, FileCheck,
+  Flame, AlertOctagon, Search, ShieldAlert, Fingerprint, Calendar
 } from 'lucide-react';
 import { Button } from '../common/Button';
+import { Badge } from '../common/Badge';
 import { useWorkflow } from '../../context/WorkflowContext';
 import './PatientRegistrationModal.css';
 
-/**
- * SYNCHRO — New Patient Registration Form Component
- * Complete intake form with empty default state, 2-column grid, inline validation, and workflow connection.
- */
+// ── Department & Consultant Dictionary ─────────────────────────
+const DEPT_CONSULTANTS = {
+  'General Surgery': ['Dr. Rajesh Sharma, MD', 'Dr. K. Patel, MD', 'Dr. S. Nair, MD'],
+  'Orthopedics': ['Dr. James Gomez, MD', 'Dr. A. Miller, MD', 'Dr. R. Shah, MD'],
+  'Cardiology': ['Dr. Alan Vance, MD', 'Dr. S. Chen, MD', 'Dr. M. Roy, MD'],
+  'Trauma Surgery': ['Dr. T. Jenkins, MD', 'Dr. E. Davis, MD', 'Dr. Rajesh Sharma, MD'],
+  'Gynecology': ['Dr. M. Vance, MD', 'Dr. A. Verma, MD'],
+  'ENT': ['Dr. S. Nair, MD', 'Dr. L. Zhang, MD'],
+  'Urology': ['Dr. R. Kapoor, MD', 'Dr. K. Patel, MD'],
+  'Neurosurgery': ['Dr. M. Roy, MD', 'Dr. J. Gomez, MD']
+};
+
+// ── Automatic Procedure Mapping Rules Engine ───────────────────
+const PROCEDURE_MAP = {
+  'Laparoscopic Cholecystectomy': {
+    department: 'General Surgery',
+    consultant: 'Dr. Rajesh Sharma, MD',
+    specialty: 'General Surgery',
+    cssdKit: 'Laparoscopic General Surgery Kit',
+    expectedDuration: '90 minutes',
+    otType: 'General Surgery OT'
+  },
+  'Total Hip Arthroplasty': {
+    department: 'Orthopedics',
+    consultant: 'Dr. James Gomez, MD',
+    specialty: 'Orthopedics',
+    cssdKit: 'Orthopedic Instrument Set',
+    expectedDuration: '120 minutes',
+    otType: 'Orthopedic OT'
+  },
+  'ACL Reconstruction': {
+    department: 'Orthopedics',
+    consultant: 'Dr. James Gomez, MD',
+    specialty: 'Orthopedics',
+    cssdKit: 'Orthopedic Instrument Set',
+    expectedDuration: '105 minutes',
+    otType: 'Sports Med OT'
+  },
+  'Coronary Artery Bypass (CABG)': {
+    department: 'Cardiology',
+    consultant: 'Dr. Alan Vance, MD',
+    specialty: 'Cardiovascular',
+    cssdKit: 'Cardiac Surgery Set',
+    expectedDuration: '240 minutes',
+    otType: 'Cardiovascular OT'
+  },
+  'Emergency Trauma Surgery': {
+    department: 'Trauma Surgery',
+    consultant: 'Dr. T. Jenkins, MD',
+    specialty: 'Trauma Surgery',
+    cssdKit: 'Emergency Trauma Kit',
+    expectedDuration: '150 minutes',
+    otType: 'Trauma OT',
+    urgency: 'EMERGENCY'
+  },
+  'Laparoscopic Hernia Repair': {
+    department: 'General Surgery',
+    consultant: 'Dr. K. Patel, MD',
+    specialty: 'General Surgery',
+    cssdKit: 'Laparoscopic General Surgery Kit',
+    expectedDuration: '75 minutes',
+    otType: 'General Surgery OT'
+  }
+};
+
 export const PatientRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
   const workflow = useWorkflow();
   const [isSaving, setIsSaving] = useState(false);
-  const [registeredMrn, setRegisteredMrn] = useState(null);
+  const [registeredResult, setRegisteredResult] = useState(null);
   const [errors, setErrors] = useState({});
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
-  // EMPTY Form State by default as strictly required by prompt
+  // Form State
   const [formData, setFormData] = useState({
-    // Patient Information
     fullName: '',
     dob: '',
     age: '',
     gender: '',
-    bloodGroup: '',
+    bloodGroup: 'O+',
     phone: '',
     email: '',
     address: '',
 
-    // Emergency Contact
     emergencyName: '',
-    emergencyRelation: '',
+    emergencyRelation: 'Spouse',
     emergencyPhone: '',
 
-    // Clinical Information
-    reasonForVisit: '',
-    symptoms: '',
-    knownAllergies: '',
-    existingConditions: '',
-    currentMedications: '',
-    diagnosis: '',
+    idType: 'National ID / Passport',
+    idNumber: '',
+    mrn: `MRN-2026-${Math.floor(1050 + Math.random() * 900)}`,
 
-    // Admission Information
-    admissionType: '',
-    department: '',
-    consultant: '',
-    roomBed: '',
+    condition: 'Gallstones (Cholelithiasis)',
+    procedure: 'Laparoscopic Cholecystectomy',
+    urgency: 'ROUTINE',
+    allergies: 'NKDA',
+    existingConditions: 'None',
+    clinicalNotes: '',
+
+    department: 'General Surgery',
+    consultant: 'Dr. Rajesh Sharma, MD',
+    referringDoctor: 'Dr. S. Nair, MD',
+    preferredOt: 'OT-02',
+
+    admissionType: 'Surgical Admission',
     admissionDate: new Date().toISOString().split('T')[0],
     expectedStay: '3 Days',
+    ward: 'Surgical Ward A',
+    room: 'Room R-103',
+    bed: 'Bed B-2',
 
-    // Insurance / Billing
-    paymentType: 'Insurance',
-    insuranceProvider: '',
-    policyNumber: '',
-    billingContact: '',
-
-    // Documents & Consent Checkboxes
-    identityVerified: false,
-    consentReceived: false,
-    contactVerified: false,
-    insuranceSubmitted: false,
-    recordsAvailable: false,
-
-    // File Upload Placeholders
-    idProofName: '',
-    insuranceDocName: '',
-    referralDocName: ''
+    consentStatus: 'SIGNED',
+    idVerified: true,
+    admissionFormSigned: true,
+    assessmentComplete: true,
+    insuranceVerified: true
   });
 
   if (!isOpen) return null;
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear inline error if field updated
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+  // Auto-fill procedure mappings
+  const handleProcedureChange = (procName) => {
+    const map = PROCEDURE_MAP[procName];
+    if (map) {
+      setFormData(prev => ({
+        ...prev,
+        procedure: procName,
+        condition: procName.includes('Chole') ? 'Cholelithiasis (Gallstones)' : procName.includes('Hip') ? 'Osteoarthritis of Hip' : procName.includes('ACL') ? 'ACL Tear' : procName.includes('Trauma') ? 'Acute Abdominal Trauma' : 'Surgical Evaluation',
+        department: map.department,
+        consultant: map.consultant,
+        urgency: map.urgency || prev.urgency
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, procedure: procName }));
     }
   };
 
-  // Inline Form Validation
+  // Duplicate Patient Prevention Check
+  const handleNameOrPhoneChange = (field, val) => {
+    setFormData(prev => ({ ...prev, [field]: val }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+
+    const checkName = field === 'fullName' ? val : formData.fullName;
+    const checkPhone = field === 'phone' ? val : formData.phone;
+
+    if (checkName.length >= 4 || checkPhone.length >= 7) {
+      const match = (workflow?.patients || []).find(p => 
+        (checkName && p.full_name?.toLowerCase() === checkName.toLowerCase().trim()) ||
+        (checkPhone && p.phone === checkPhone.trim())
+      );
+      if (match) {
+        setDuplicateWarning(match);
+      } else {
+        setDuplicateWarning(null);
+      }
+    }
+  };
+
+  // Field updates
+  const updateField = (field, val) => {
+    setFormData(prev => ({ ...prev, [field]: val }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+  };
+
+  // Inline Validation
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Please enter the patient's full name.";
-    }
-    if (!formData.dob) {
-      newErrors.dob = "Please select the date of birth.";
-    }
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Please enter the primary phone number.";
-    }
-    if (!formData.gender) {
-      newErrors.gender = "Please select the gender.";
-    }
-    if (!formData.admissionType) {
-      newErrors.admissionType = "Please select the admission type.";
-    }
-    if (!formData.department) {
-      newErrors.department = "Please select the medical department.";
-    }
+    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required.";
+    if (!formData.dob) newErrors.dob = "Date of birth is required.";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required.";
+    if (!formData.gender) newErrors.gender = "Gender selection is required.";
+    if (!formData.condition.trim()) newErrors.condition = "Primary condition is required.";
+    if (!formData.procedure.trim()) newErrors.procedure = "Procedure is required.";
+    if (!formData.department) newErrors.department = "Department is required.";
+    if (!formData.consultant) newErrors.consultant = "Consultant is required.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCalculateAge = (dobString) => {
-    if (!dobString) return;
-    const birthDate = new Date(dobString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    setFormData(prev => ({ ...prev, dob: dobString, age: age > 0 ? String(age) : '0' }));
-    if (errors.dob) setErrors(prev => ({ ...prev, dob: null }));
-  };
-
+  // Registration Submit Handler
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSaving(true);
 
     setTimeout(() => {
-      // 1. Generate unique MRN
-      const randomNum = Math.floor(1050 + Math.random() * 900);
-      const generatedMrn = `MRN-${randomNum}`;
+      const mappedRule = PROCEDURE_MAP[formData.procedure] || { cssdKit: 'General Laparotomy Set', otType: 'General Surgery OT' };
+      const isEmergency = formData.urgency === 'EMERGENCY';
 
-      // 2. Split full name
-      const nameParts = formData.fullName.trim().split(' ');
-      const firstName = nameParts[0] || 'Patient';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      // 3. Extract consultant display name
-      const consultantObj = workflow.doctors.find(d => d.id === formData.consultant) || workflow.doctors[0];
-      const consultantName = consultantObj ? consultantObj.display_name : 'Dr. Rajesh Sharma, MD';
-
-      // 4. Register patient into central WorkflowContext state
-      const createdRecord = workflow.registerPatient({
-        mrn: generatedMrn,
-        firstName,
-        lastName,
-        fullName: formData.fullName.trim(),
-        age: formData.age || '35',
+      const newRecord = {
+        mrn: formData.mrn,
+        fullName: formData.fullName,
+        firstName: formData.fullName.split(' ')[0] || 'New',
+        lastName: formData.fullName.split(' ').slice(1).join(' ') || 'Patient',
+        dob: formData.dob,
+        age: formData.age || 42,
         gender: formData.gender,
-        bloodGroup: formData.bloodGroup || 'O+',
+        bloodGroup: formData.bloodGroup,
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
         emergencyName: formData.emergencyName,
-        emergencyPhone: formData.emergencyPhone,
         emergencyRelation: formData.emergencyRelation,
-        condition: formData.reasonForVisit || formData.diagnosis || 'General Intake Evaluation',
-        procedure: formData.diagnosis || formData.reasonForVisit || 'Admitted Patient',
-        admissionStatus: 'ADMITTED',
-        assignedDoctor: consultantName,
-        assignedDoctorId: consultantObj ? consultantObj.id : 'doc-1',
-        room: formData.roomBed ? formData.roomBed.split(' - ')[1] || 'Room R-103' : 'Room R-103',
-        bed: formData.roomBed ? formData.roomBed.split(' - ')[2] || 'Bed B-3' : 'Bed B-3',
+        emergencyPhone: formData.emergencyPhone,
+        condition: formData.condition,
+        procedure: formData.procedure,
+        urgency: formData.urgency,
+        assignedDoctor: formData.consultant,
         department: formData.department,
-        insuranceProvider: formData.insuranceProvider || 'Self Pay',
-        insuranceId: formData.policyNumber || 'N/A',
-        paymentType: formData.paymentType,
-        currentMedications: formData.currentMedications,
-        allergies: formData.knownAllergies,
-        consentVerified: formData.consentReceived
-      });
+        room: formData.room,
+        bed: formData.bed,
+        admissionStatus: isEmergency ? 'EMERGENCY' : formData.consentStatus === 'SIGNED' ? 'ADMITTED' : 'PRE_OP',
+        consentVerified: formData.consentStatus === 'SIGNED',
+        cssdKitRequired: mappedRule.cssdKit,
+        otTypeRequired: mappedRule.otType
+      };
+
+      let created = null;
+      if (workflow?.registerPatient) {
+        created = workflow.registerPatient(newRecord);
+      }
 
       setIsSaving(false);
-      setRegisteredMrn(generatedMrn);
-
-      if (onSuccess) {
-        onSuccess(createdRecord);
-      }
-    }, 400);
+      setRegisteredResult({
+        patientName: formData.fullName,
+        mrn: formData.mrn,
+        department: formData.department,
+        consultant: formData.consultant,
+        procedure: formData.procedure,
+        cssdKit: mappedRule.cssdKit,
+        urgency: formData.urgency,
+        record: created
+      });
+    }, 600);
   };
 
-  const availableBedsList = [
-    { label: 'General Ward - Room 101 - Bed B1', val: 'Ward A - Room 101 - Bed B1' },
-    { label: 'General Ward - Room 103 - Bed B3', val: 'Ward A - Room 103 - Bed B3' },
-    { label: 'Surgical Ward - Room 204 - Bed B2', val: 'Surgical - Room 204 - Bed B2' },
-    { label: 'ICU Suite - Room 301 - Bed ICU-1', val: 'ICU - Room 301 - Bed ICU-1' },
-    { label: 'Cardiology - Room 402 - Bed C2', val: 'Cardiology - Room 402 - Bed C2' }
-  ];
-
   return (
-    <div className="synchro-modal-backdrop font-sans" onClick={onClose}>
-      <div className="synchro-registration-modal" onClick={(e) => e.stopPropagation()}>
-
-        {/* Modal Header */}
+    <div className="synchro-modal-backdrop" onClick={onClose}>
+      <div className="synchro-registration-modal font-sans" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="registration-modal-header">
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--text-navy-head, #0a1628)', letterSpacing: '-0.02em', margin: 0 }}>
-              NEW PATIENT REGISTRATION
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', marginTop: '4px', margin: 0 }}>
-              Create a patient record and begin the hospital workflow.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#e0f2fe', color: '#0284c7' }}>
+              <User size={20} />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0 }}>
+                New Patient Registration
+              </h2>
+              <p className="font-mono text-muted" style={{ fontSize: '11px', margin: '2px 0 0 0' }}>
+                Create a patient record and begin the hospital workflow. Single-Entry Intake Engine • Auto-Assigns MRN, CSSD Kit & OT Requirements
+              </p>
+            </div>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="modal-close-round-btn"
-            aria-label="Close modal"
-          >
-            <X size={20} />
+
+          <button className="modal-close-round-btn" onClick={onClose} aria-label="Close modal">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Modal Scrollable Body */}
+        {/* Modal Body */}
         <div className="registration-modal-body">
-          
-          {/* Success Confirmation Modal State */}
-          {registeredMrn ? (
-            <div style={{ padding: '36px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#ecfdf5', border: '2px solid #10b981', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle2 size={36} />
+          {registeredResult ? (
+            /* SUCCESS OVERLAY */
+            <div style={{ padding: '40px 20px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <CheckCircle2 size={32} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text-navy-head)' }}>
-                  Patient Registered Successfully!
-                </h3>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 800, color: 'var(--accent-cyan)', background: '#ecfeff', padding: '6px 16px', borderRadius: '8px', display: 'inline-block', margin: '6px auto' }}>
-                  {registeredMrn}
+              <h3 className="font-display font-bold text-navy-head" style={{ fontSize: '22px', marginBottom: '8px' }}>
+                PATIENT WORKFLOW REGISTERED
+              </h3>
+              <p className="font-mono text-muted" style={{ fontSize: '12px', marginBottom: '24px' }}>
+                Centralized patient identity created. Workflow requirements dispatched to CSSD, OT, and Admissions.
+              </p>
+
+              <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', textAlign: 'left', marginBottom: '24px', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">PATIENT NAME:</span>
+                  <strong className="text-navy-head">{registeredResult.patientName}</strong>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '480px', margin: '0 auto', lineHeight: 1.5 }}>
-                  Patient <strong>{formData.fullName}</strong> has been assigned to <strong>{formData.department || 'General Medicine'}</strong> under <strong>Dr. Rajesh Sharma, MD</strong> and added to the SYNCHRO hospital workflow.
-                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">ASSIGNED MRN:</span>
+                  <strong className="text-blue">{registeredResult.mrn}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">DEPARTMENT:</span>
+                  <span>{registeredResult.department}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">CONSULTANT:</span>
+                  <span>{registeredResult.consultant}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">PROCEDURE:</span>
+                  <span>{registeredResult.procedure}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="text-muted">REQUIRED CSSD KIT:</span>
+                  <strong className="text-teal">{registeredResult.cssdKit}</strong>
+                </div>
               </div>
 
-              <div style={{ padding: '16px', borderRadius: '12px', background: '#f8fafc', border: '1px solid var(--border-default)', width: '100%', maxWidth: '440px', marginTop: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-navy-head)', marginBottom: '8px' }}>
-                  AUTOMATED WORKFLOW STATUS
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-                  <span>✓ Front Desk Intake</span>
-                  <span>→</span>
-                  <span>✓ Bed Assigned</span>
-                  <span>→</span>
-                  <span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>Nursing Queue</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                <Button 
-                  variant="primary" 
-                  size="md" 
-                  onClick={() => {
-                    setRegisteredMrn(null);
-                    onClose();
-                  }}
-                >
-                  Return to Front Desk Command Center
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <Button size="md" variant="primary" icon={ArrowRight} onClick={() => { onSuccess(registeredResult.record); onClose(); }}>
+                  View Patient Workflow
+                </Button>
+                <Button size="md" variant="secondary" onClick={onClose}>
+                  Done & Close
                 </Button>
               </div>
             </div>
           ) : (
+            /* FORM WORKSPACE */
             <form onSubmit={handleSubmit} className="registration-inner-container">
-              
+              {/* Duplicate Warning Banner */}
+              {duplicateWarning && (
+                <div style={{ padding: '12px 16px', borderRadius: '10px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldAlert size={18} />
+                    <span>POSSIBLE EXISTING PATIENT: <strong>{duplicateWarning.full_name}</strong> ({duplicateWarning.patient_code})</span>
+                  </div>
+                  <Button size="xs" variant="secondary" onClick={() => { onSuccess(duplicateWarning); onClose(); }}>
+                    Use Existing Patient Record
+                  </Button>
+                </div>
+              )}
+
+              {/* Emergency Pathway Banner */}
+              {formData.urgency === 'EMERGENCY' && (
+                <div style={{ padding: '14px 18px', borderRadius: '10px', backgroundColor: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Flame size={22} className="animate-pulse" />
+                  <div>
+                    <h4 className="font-display font-bold" style={{ fontSize: '14px', margin: 0 }}>EMERGENCY PATHWAY ACTIVATED — STAT PRIORITY</h4>
+                    <span className="font-mono" style={{ fontSize: '11px' }}>Patient will be fast-tracked to Emergency Queue, STAT CSSD Demand & Priority OT Suite.</span>
+                  </div>
+                </div>
+              )}
+
               {/* SECTION 1: PATIENT INFORMATION */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <User size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    1. Patient Information
-                  </h3>
+              <div className="ot-card" style={{ padding: '20px' }}>
+                <div className="registration-section-header">
+                  <User size={16} className="text-blue" />
+                  <h3 className="registration-section-title">1. PATIENT DEMOGRAPHICS & CONTACT</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Full Name *
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.fullName ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.fullName} 
-                      onChange={e => updateField('fullName', e.target.value)} 
-                      placeholder="e.g. Meera Chen" 
+                <div className="form-grid-2col">
+                  <div>
+                    <label className="form-field-label font-mono">FULL NAME *</label>
+                    <input
+                      type="text"
+                      className={`manual-text-input ${errors.fullName ? 'has-error' : ''}`}
+                      placeholder="e.g. Ananya Rao"
+                      value={formData.fullName}
+                      onChange={(e) => handleNameOrPhoneChange('fullName', e.target.value)}
                     />
-                    {errors.fullName && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.fullName}</span>}
+                    {errors.fullName && <span className="inline-field-error font-mono">{errors.fullName}</span>}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Date of Birth *
-                    </label>
-                    <input 
-                      type="date" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.dob ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.dob} 
-                      onChange={e => handleCalculateAge(e.target.value)} 
+                  <div>
+                    <label className="form-field-label font-mono">DATE OF BIRTH * & AGE</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="date"
+                        className={`manual-text-input ${errors.dob ? 'has-error' : ''}`}
+                        value={formData.dob}
+                        onChange={(e) => {
+                          updateField('dob', e.target.value);
+                          if (e.target.value) {
+                            const birth = new Date(e.target.value);
+                            const age = new Date().getFullYear() - birth.getFullYear();
+                            updateField('age', age);
+                          }
+                        }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Age"
+                        className="manual-text-input"
+                        style={{ width: '80px' }}
+                        value={formData.age}
+                        onChange={(e) => updateField('age', e.target.value)}
+                      />
+                    </div>
+                    {errors.dob && <span className="inline-field-error font-mono">{errors.dob}</span>}
+                  </div>
+
+                  <div>
+                    <label className="form-field-label font-mono">GENDER * & BLOOD GROUP</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select
+                        className={`manual-text-input ${errors.gender ? 'has-error' : ''}`}
+                        value={formData.gender}
+                        onChange={(e) => updateField('gender', e.target.value)}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="MALE">Male</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                      <select
+                        className="manual-text-input"
+                        style={{ width: '100px' }}
+                        value={formData.bloodGroup}
+                        onChange={(e) => updateField('bloodGroup', e.target.value)}
+                      >
+                        {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-field-label font-mono">PRIMARY PHONE *</label>
+                    <input
+                      type="text"
+                      className={`manual-text-input ${errors.phone ? 'has-error' : ''}`}
+                      placeholder="+1 (555) 019-2831"
+                      value={formData.phone}
+                      onChange={(e) => handleNameOrPhoneChange('phone', e.target.value)}
                     />
-                    {errors.dob && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.dob}</span>}
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Age
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.age} 
-                      onChange={e => updateField('age', e.target.value)} 
-                      placeholder="Auto-calculated" 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Gender *
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.gender ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.gender} 
-                      onChange={e => updateField('gender', e.target.value)}
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    {errors.gender && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.gender}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Blood Group
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.bloodGroup} 
-                      onChange={e => updateField('bloodGroup', e.target.value)}
-                    >
-                      <option value="">Select Blood Group</option>
-                      <option value="A+">A+</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B-">B-</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
-                      <option value="AB+">AB+</option>
-                      <option value="AB-">AB-</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Phone Number *
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.phone ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.phone} 
-                      onChange={e => updateField('phone', e.target.value)} 
-                      placeholder="+1 (555) 019-2831" 
-                    />
-                    {errors.phone && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.phone}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Email Address
-                    </label>
-                    <input 
-                      type="email" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.email} 
-                      onChange={e => updateField('email', e.target.value)} 
-                      placeholder="patient@example.com" 
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                    Residential Address
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                    value={formData.address} 
-                    onChange={e => updateField('address', e.target.value)} 
-                    placeholder="104 Healthcare Ave, Cityville, State 12345" 
-                  />
-                </div>
-              </div>
-
-              {/* SECTION 2: EMERGENCY CONTACT */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <Phone size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    2. Emergency Contact
-                  </h3>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Contact Name
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.emergencyName} 
-                      onChange={e => updateField('emergencyName', e.target.value)} 
-                      placeholder="e.g. John Chen" 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Relationship
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.emergencyRelation} 
-                      onChange={e => updateField('emergencyRelation', e.target.value)} 
-                      placeholder="Spouse / Parent / Sibling" 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Emergency Phone
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.emergencyPhone} 
-                      onChange={e => updateField('emergencyPhone', e.target.value)} 
-                      placeholder="+1 (555) 019-9988" 
-                    />
+                    {errors.phone && <span className="inline-field-error font-mono">{errors.phone}</span>}
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 3: INITIAL CLINICAL INFORMATION */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <Stethoscope size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    3. Initial Clinical Information (Front Desk Intake)
-                  </h3>
+              {/* SECTION 2: IDENTIFICATION */}
+              <div className="ot-card" style={{ padding: '20px' }}>
+                <div className="registration-section-header">
+                  <Fingerprint size={16} className="text-teal" />
+                  <h3 className="registration-section-title">2. PATIENT IDENTIFICATION & MRN</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Reason for Visit
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.reasonForVisit} 
-                      onChange={e => updateField('reasonForVisit', e.target.value)} 
-                      placeholder="e.g. Severe knee joint pain, scheduled hip replacement" 
-                    />
+                <div className="form-grid-3col">
+                  <div>
+                    <label className="form-field-label font-mono">ID TYPE</label>
+                    <select className="manual-text-input" value={formData.idType} onChange={(e) => updateField('idType', e.target.value)}>
+                      <option value="National ID / Passport">National ID / Passport</option>
+                      <option value="Driver License">Driver's License</option>
+                      <option value="Health Insurance Card">Health Insurance Card</option>
+                    </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Symptoms
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.symptoms} 
-                      onChange={e => updateField('symptoms', e.target.value)} 
-                      placeholder="Joint stiffness, localized swelling" 
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Known Allergies
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.knownAllergies} 
-                      onChange={e => updateField('knownAllergies', e.target.value)} 
-                      placeholder="e.g. Penicillin, Latex, NKDA" 
-                    />
+                  <div>
+                    <label className="form-field-label font-mono">ID NUMBER</label>
+                    <input type="text" className="manual-text-input" placeholder="ID-8841-9921" value={formData.idNumber} onChange={(e) => updateField('idNumber', e.target.value)} />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Existing Conditions
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.existingConditions} 
-                      onChange={e => updateField('existingConditions', e.target.value)} 
-                      placeholder="e.g. Hypertension, Diabetes Type 2" 
-                    />
+                  <div>
+                    <label className="form-field-label font-mono">AUTO-GENERATED MRN</label>
+                    <input type="text" className="manual-text-input font-bold text-blue" value={formData.mrn} readOnly />
                   </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Current Medications
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.currentMedications} 
-                      onChange={e => updateField('currentMedications', e.target.value)} 
-                      placeholder="e.g. Metformin 500mg, Lisinopril 10mg" 
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                    Diagnosis / Provisional Diagnosis (Optional)
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                    value={formData.diagnosis} 
-                    onChange={e => updateField('diagnosis', e.target.value)} 
-                    placeholder="e.g. Osteoarthritis of Hip • Total Hip Arthroplasty" 
-                  />
                 </div>
               </div>
 
-              {/* SECTION 4: ADMISSION DETAILS */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <Building2 size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    4. Admission Details
-                  </h3>
+              {/* SECTION 3: CLINICAL INFORMATION & PROCEDURE */}
+              <div className="ot-card" style={{ padding: '20px' }}>
+                <div className="registration-section-header">
+                  <Stethoscope size={16} className="text-purple" />
+                  <h3 className="registration-section-title">3. CLINICAL CONDITION & PROCEDURE SELECTION</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Admission Type *
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.admissionType ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.admissionType} 
-                      onChange={e => updateField('admissionType', e.target.value)}
+                <div className="form-grid-2col">
+                  <div>
+                    <label className="form-field-label font-mono">PLANNED PROCEDURE / TREATMENT *</label>
+                    <select
+                      className={`manual-text-input ${errors.procedure ? 'has-error' : ''}`}
+                      value={formData.procedure}
+                      onChange={(e) => handleProcedureChange(e.target.value)}
                     >
-                      <option value="">Select Type</option>
-                      <option value="Emergency">Emergency</option>
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Walk-in">Walk-in</option>
-                      <option value="Referral">Referral</option>
+                      <option value="Laparoscopic Cholecystectomy">Laparoscopic Cholecystectomy (General Surgery)</option>
+                      <option value="Total Hip Arthroplasty">Total Hip Arthroplasty (Orthopedics)</option>
+                      <option value="ACL Reconstruction">ACL Reconstruction (Orthopedics)</option>
+                      <option value="Coronary Artery Bypass (CABG)">Coronary Artery Bypass CABG (Cardiology)</option>
+                      <option value="Emergency Trauma Surgery">Emergency Trauma Surgery (Trauma)</option>
+                      <option value="Laparoscopic Hernia Repair">Laparoscopic Hernia Repair (General Surgery)</option>
                     </select>
-                    {errors.admissionType && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.admissionType}</span>}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Department *
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: errors.department ? '1px solid var(--status-red)' : '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.department} 
-                      onChange={e => updateField('department', e.target.value)}
+                  <div>
+                    <label className="form-field-label font-mono">PRIMARY CONDITION / DIAGNOSIS *</label>
+                    <input type="text" className={`manual-text-input ${errors.condition ? 'has-error' : ''}`} value={formData.condition} onChange={(e) => updateField('condition', e.target.value)} />
+                  </div>
+
+                  <div>
+                    <label className="form-field-label font-mono">CLINICAL URGENCY *</label>
+                    <select
+                      className="manual-text-input font-bold"
+                      style={{ color: formData.urgency === 'EMERGENCY' ? '#dc2626' : 'var(--text-navy-head)' }}
+                      value={formData.urgency}
+                      onChange={(e) => updateField('urgency', e.target.value)}
                     >
-                      <option value="">Select Department</option>
-                      <option value="General Medicine">General Medicine</option>
-                      <option value="Cardiology">Cardiology</option>
-                      <option value="Orthopedics">Orthopedics</option>
-                      <option value="General Surgery">General Surgery</option>
-                      <option value="Neurology">Neurology</option>
-                      <option value="Other">Other</option>
+                      <option value="ROUTINE">Routine Elective</option>
+                      <option value="URGENT">Urgent (Within 24h)</option>
+                      <option value="HIGH PRIORITY">High Priority (Within 6h)</option>
+                      <option value="EMERGENCY">EMERGENCY (STAT Immediate)</option>
                     </select>
-                    {errors.department && <span style={{ fontSize: '11px', color: 'var(--status-red-text)', marginTop: '4px', display: 'block' }}>{errors.department}</span>}
+                  </div>
+
+                  <div>
+                    <label className="form-field-label font-mono">KNOWN ALLERGIES</label>
+                    <input type="text" className="manual-text-input" placeholder="NKDA / Penicillin" value={formData.allergies} onChange={(e) => updateField('allergies', e.target.value)} />
                   </div>
                 </div>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Attending Consultant
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.consultant} 
-                      onChange={e => updateField('consultant', e.target.value)}
-                    >
-                      <option value="">Select Consultant</option>
-                      <option value="doc-1">Dr. Rajesh Sharma, MD (Chief Medical Lead)</option>
-                      <option value="doc-2">Dr. James Gomez, MD (Orthopedics Lead)</option>
-                      <option value="doc-3">Dr. Kevin Patel, MD (Anesthesiology & Critical Care)</option>
-                      <option value="doc-4">Dr. Alan Vance, MD (Cardiovascular Surgery)</option>
-                      <option value="doc-5">Dr. Priya Patel, MD (General Surgery)</option>
-                      <option value="doc-6">Dr. Arjun Rao, MD (Neurology)</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Room / Bed (Available Only)
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.roomBed} 
-                      onChange={e => updateField('roomBed', e.target.value)}
-                    >
-                      <option value="">Select Available Bed</option>
-                      {availableBedsList.map(b => (
-                        <option key={b.val} value={b.val}>{b.label}</option>
-                      ))}
-                    </select>
-                  </div>
+              {/* SECTION 4: CARE TEAM & DEPARTMENT */}
+              <div className="ot-card" style={{ padding: '20px' }}>
+                <div className="registration-section-header">
+                  <Building2 size={16} className="text-cyan" />
+                  <h3 className="registration-section-title">4. CARE TEAM & CONSULTANT SELECTION</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Admission Date
-                    </label>
-                    <input 
-                      type="date" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.admissionDate} 
-                      onChange={e => updateField('admissionDate', e.target.value)} 
-                    />
+                <div className="form-grid-2col">
+                  <div>
+                    <label className="form-field-label font-mono">DEPARTMENT *</label>
+                    <select
+                      className="manual-text-input"
+                      value={formData.department}
+                      onChange={(e) => {
+                        const dept = e.target.value;
+                        const consultants = DEPT_CONSULTANTS[dept] || ['Dr. Rajesh Sharma, MD'];
+                        setFormData(prev => ({
+                          ...prev,
+                          department: dept,
+                          consultant: consultants[0]
+                        }));
+                      }}
+                    >
+                      {Object.keys(DEPT_CONSULTANTS).map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Expected Length of Stay
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.expectedStay} 
-                      onChange={e => updateField('expectedStay', e.target.value)}
+                  <div>
+                    <label className="form-field-label font-mono">ATTENDING CONSULTANT *</label>
+                    <select
+                      className="manual-text-input"
+                      value={formData.consultant}
+                      onChange={(e) => updateField('consultant', e.target.value)}
                     >
-                      <option value="Same Day / Day Case">Same Day / Day Case</option>
-                      <option value="1-2 Days">1-2 Days</option>
-                      <option value="3 Days">3 Days</option>
-                      <option value="4-7 Days">4-7 Days</option>
-                      <option value="> 1 Week">1+ Weeks</option>
+                      {(DEPT_CONSULTANTS[formData.department] || ['Dr. Rajesh Sharma, MD']).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 5: INSURANCE / BILLING INFORMATION */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <CreditCard size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    5. Billing & Insurance Information
-                  </h3>
+              {/* SECTION 5: CONSENT & DOCUMENTATION */}
+              <div className="ot-card" style={{ padding: '20px' }}>
+                <div className="registration-section-header">
+                  <FileCheck size={16} className="text-teal" />
+                  <h3 className="registration-section-title">5. DOCUMENTATION & CONSENT VERIFICATION</h3>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Payment Type
-                    </label>
-                    <select 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.paymentType} 
-                      onChange={e => updateField('paymentType', e.target.value)}
+                <div className="form-grid-2col font-mono" style={{ fontSize: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" checked={formData.idVerified} onChange={(e) => updateField('idVerified', e.target.checked)} />
+                    <span>Patient Government ID Verified</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" checked={formData.admissionFormSigned} onChange={(e) => updateField('admissionFormSigned', e.target.checked)} />
+                    <span>Admission Form Signed</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <select
+                      className="manual-text-input"
+                      style={{ fontSize: '11px', width: '160px' }}
+                      value={formData.consentStatus}
+                      onChange={(e) => updateField('consentStatus', e.target.value)}
                     >
-                      <option value="Insurance">Insurance</option>
-                      <option value="Self Pay">Self Pay</option>
-                      <option value="Corporate">Corporate</option>
-                      <option value="Government Scheme">Government Scheme</option>
+                      <option value="SIGNED">Surgical Consent SIGNED</option>
+                      <option value="PENDING">Consent PENDING (Pre-Op Hold)</option>
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Insurance Provider
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.insuranceProvider} 
-                      onChange={e => updateField('insuranceProvider', e.target.value)} 
-                      placeholder="e.g. BlueCross Shield" 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'block' }}>
-                      Policy Number
-                    </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px' }}
-                      value={formData.policyNumber} 
-                      onChange={e => updateField('policyNumber', e.target.value)} 
-                      placeholder="e.g. BC-994201" 
-                    />
+                    <span>Surgical Consent Status</span>
                   </div>
                 </div>
               </div>
-
-              {/* SECTION 6: DOCUMENTS & CONSENT */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <FileCheck size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-navy-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    6. Verification, Consent & Document Attachments
-                  </h3>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.identityVerified} 
-                      onChange={e => updateField('identityVerified', e.target.checked)} 
-                    />
-                    Patient identity verified (Photo ID)
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.consentReceived} 
-                      onChange={e => updateField('consentReceived', e.target.checked)} 
-                    />
-                    Admission consent form received & signed
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.contactVerified} 
-                      onChange={e => updateField('contactVerified', e.target.checked)} 
-                    />
-                    Contact & emergency information verified
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.insuranceSubmitted} 
-                      onChange={e => updateField('insuranceSubmitted', e.target.checked)} 
-                    />
-                    Insurance pre-authorization documents attached
-                  </label>
-                </div>
-
-                {/* Upload Placeholders */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div style={{ padding: '12px', borderRadius: '8px', border: '1px dashed var(--border-default)', textAlign: 'center', background: '#ffffff' }}>
-                    <Upload size={16} style={{ color: 'var(--text-muted)', marginBottom: '4px' }} />
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block' }}>ID Proof</span>
-                    <span style={{ fontSize: '10px', color: 'var(--accent-cyan)', cursor: 'pointer' }}>Upload File (Optional)</span>
-                  </div>
-
-                  <div style={{ padding: '12px', borderRadius: '8px', border: '1px dashed var(--border-default)', textAlign: 'center', background: '#ffffff' }}>
-                    <Upload size={16} style={{ color: 'var(--text-muted)', marginBottom: '4px' }} />
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block' }}>Insurance Card</span>
-                    <span style={{ fontSize: '10px', color: 'var(--accent-cyan)', cursor: 'pointer' }}>Upload File (Optional)</span>
-                  </div>
-
-                  <div style={{ padding: '12px', borderRadius: '8px', border: '1px dashed var(--border-default)', textAlign: 'center', background: '#ffffff' }}>
-                    <Upload size={16} style={{ color: 'var(--text-muted)', marginBottom: '4px' }} />
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block' }}>Referral Letter</span>
-                    <span style={{ fontSize: '10px', color: 'var(--accent-cyan)', cursor: 'pointer' }}>Upload File (Optional)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Action Controls */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: '20px',
-                borderTop: '1px solid var(--border-subtle)',
-                marginTop: '10px'
-              }}>
-                <Button type="button" variant="secondary" size="md" onClick={onClose}>
-                  Cancel
-                </Button>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <Button type="button" variant="secondary" size="md" onClick={() => alert("Registration saved as draft.")}>
-                    Save as Draft
-                  </Button>
-
-                  <Button type="submit" variant="primary" size="md" icon={CheckCircle2} disabled={isSaving}>
-                    {isSaving ? 'Registering Patient...' : 'Register Patient'}
-                  </Button>
-                </div>
-              </div>
-
             </form>
           )}
-
         </div>
+
+        {/* Modal Footer */}
+        {!registeredResult && (
+          <div className="registration-modal-footer">
+            <Button size="md" variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button size="md" variant="primary" icon={Check} onClick={handleSubmit} disabled={isSaving}>
+              {isSaving ? 'Registering Patient...' : 'REGISTER PATIENT & START WORKFLOW'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
