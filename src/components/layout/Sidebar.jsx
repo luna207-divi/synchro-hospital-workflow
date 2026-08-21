@@ -11,7 +11,8 @@ import {
   Package,
   FileBarChart,
   Users,
-  Activity
+  Activity,
+  DollarSign
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 import { useAuth } from '../../context/AuthContext';
@@ -45,6 +46,13 @@ export const Sidebar = ({ activeNav: activeNavProp, onNavSelect }) => {
     {
       title: 'Operations',
       items: [
+        {
+          id: 'billing',
+          label: 'Billing Overview',
+          icon: DollarSign,
+          section: 'Operations',
+          description: 'Revenue, claims & payments'
+        },
         {
           id: 'frontdesk',
           label: 'Front Desk',

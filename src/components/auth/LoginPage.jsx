@@ -32,6 +32,7 @@ const DEMO_ACCOUNTS = [
   { label: 'Nurse', email: 'nurse@synchro.health', pass: 'Nurse@123', role: 'NURSE', color: '#0d9488' },
   { label: 'CSSD', email: 'cssd@synchro.health', pass: 'CSSD@123', role: 'CSSD', color: '#059669' },
   { label: 'OT Manager', email: 'ot@synchro.health', pass: 'OT@123', role: 'OT_MANAGER', color: '#dc2626' },
+  { label: 'Billing', email: 'billing@synchro.health', pass: 'Billing@123', role: 'BILLING', color: '#0284c7' },
 ];
 
 export const LoginPage = () => {
@@ -261,6 +262,7 @@ export const LoginPage = () => {
                 <option value="NURSE">Nursing & PACU Recovery Lead</option>
                 <option value="CSSD">CSSD Sterilization & Inventory Lead</option>
                 <option value="OT_MANAGER">Operating Theatre Coordinator / OT Lead</option>
+                <option value="BILLING">Billing / Revenue & Claims Manager</option>
                 <option value="ADMIN">Hospital Administrator (Executive Command)</option>
               </select>
             </div>

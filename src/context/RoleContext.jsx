@@ -27,7 +27,7 @@ const ROLE_NAV_PERMISSIONS = {
   CSSD_MANAGER: ['instruments', 'alerts', 'reports'],
 
   OT_MANAGER:   ['flow-board', 'readiness', 'instruments', 'alerts', 'reports'],
-  BILLING:      ['analytics', 'reports', 'alerts'],
+  BILLING:      ['billing', 'patients', 'analytics', 'reports', 'alerts'],
 };
 
 // Legacy ROLES object kept for backward compatibility with existing components
