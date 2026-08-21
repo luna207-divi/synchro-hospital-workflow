@@ -23,6 +23,8 @@ import { Button } from '../common/Button';
 import { SearchInput } from '../common/Input';
 import { PackDetailDrawer } from './PackDetailDrawer';
 import { ScanPackModal } from './ScanPackModal';
+import { useCssdPacks } from '../../hooks/useCssdPacks';
+import { useWorkflow } from '../../context/WorkflowContext';
 import './CSSDPage.css';
 
 export const CSSDPage = () => {
@@ -31,93 +33,8 @@ export const CSSDPage = () => {
   const [selectedPack, setSelectedPack] = useState(null);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
 
-  const [packs, setPacks] = useState([
-    {
-      id: 'CSSD-00125',
-      type: 'TKR Instrument Set',
-      sterilizationStatus: 'Sterile',
-      sterilizedOn: '10 Aug',
-      expiry: '15 Aug',
-      location: 'Storage A',
-      assignedOT: 'OT-02',
-      status: 'Available',
-      currentStageIdx: 4,
-      isExpired: false
-    },
-    {
-      id: 'CSSD-EXP-09',
-      type: 'General Laparotomy Set #02',
-      sterilizationStatus: 'Expired',
-      sterilizedOn: '03 Aug',
-      expiry: '08 Aug (Expired)',
-      location: 'Storage B - Bay 4',
-      assignedOT: 'Unassigned',
-      status: 'Expired',
-      currentStageIdx: 4,
-      isExpired: true
-    },
-    {
-      id: 'CSSD-00142',
-      type: 'Orthopedic Power Tool Set #04',
-      sterilizationStatus: 'In Sterilization',
-      sterilizedOn: '10 Aug',
-      expiry: '15 Aug',
-      location: 'Autoclave #02 (Cooldown)',
-      assignedOT: 'OT-03',
-      status: 'In Process',
-      currentStageIdx: 2,
-      isExpired: false
-    },
-    {
-      id: 'CSSD-00118',
-      type: 'Total Hip Arthroplasty Tray #01',
-      sterilizationStatus: 'Sterile',
-      sterilizedOn: '10 Aug',
-      expiry: '14 Aug',
-      location: 'OT-01 Holding Core',
-      assignedOT: 'OT-01',
-      status: 'In Room',
-      currentStageIdx: 5,
-      isExpired: false
-    },
-    {
-      id: 'CSSD-00109',
-      type: 'Micro-Vascular Set #03',
-      sterilizationStatus: 'Sterile',
-      sterilizedOn: '09 Aug',
-      expiry: '11 Aug (24h left)',
-      location: 'Storage A - Shelf 2',
-      assignedOT: 'Unassigned',
-      status: 'Available',
-      currentStageIdx: 4,
-      isExpired: false,
-      isExpiringSoon: true
-    },
-    {
-      id: 'CSSD-00098',
-      type: 'Laparoscopic Cholecystectomy Kit',
-      sterilizationStatus: 'Sterile',
-      sterilizedOn: '10 Aug',
-      expiry: '15 Aug',
-      location: 'Storage C',
-      assignedOT: 'OT-04',
-      status: 'Available',
-      currentStageIdx: 4,
-      isExpired: false
-    },
-    {
-      id: 'CSSD-00084',
-      type: 'Spinal Fusion Instrument Tray #02',
-      sterilizationStatus: 'Decontaminated',
-      sterilizedOn: 'Pending',
-      expiry: '16 Aug',
-      location: 'Decon Bay 3',
-      assignedOT: 'Unassigned',
-      status: 'Awaiting Sterilization',
-      currentStageIdx: 1,
-      isExpired: false
-    }
-  ]);
+  const { data: packs = [] } = useCssdPacks();
+  const workflow = useWorkflow();
 
   const handleAssignOT = (packId, suiteName) => {
     setPacks(prev => prev.map(p => {
@@ -164,11 +81,11 @@ export const CSSDPage = () => {
     return matchesTab && matchesSearch;
   });
 
-  const totalPacks = 142;
-  const sterilePacksCount = 98;
-  const awaitingSterilizationCount = 18;
-  const assignedToOTCount = 21;
-  const expiringSoonCount = 5;
+  const totalPacks = (packs || workflow.cssd_packs || []).length;
+  const sterilePacksCount = (packs || workflow.cssd_packs || []).filter(p => p.status === 'STERILE' || p.status === 'Sterile' || p.status === 'STERILE').length;
+  const awaitingSterilizationCount = (packs || workflow.cssd_packs || []).filter(p => p.status === 'STERILIZING' || p.status === 'In Process' || p.status === 'IN_PROCESS' || p.status === 'IN_PROCESSING').length;
+  const assignedToOTCount = (packs || workflow.cssd_packs || []).filter(p => p.location && p.location.startsWith && typeof p.location === 'string' && p.location.startsWith('OT')).length;
+  const expiringSoonCount = (packs || workflow.cssd_packs || []).filter(p => p.status === 'EXPIRED' || p.status === 'Expired' || p.isExpiringSoon).length;
 
   return (
     <div className="ot-cssd-page">

@@ -20,12 +20,14 @@
 
 /* ── Brand Header ────────────────────────────────────────── */
 .sidebar-brand {
-  padding: var(--space-5) var(--space-5);
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  min-height: 80px;
+  width: 100%;
 }
 
 .brand-mark {

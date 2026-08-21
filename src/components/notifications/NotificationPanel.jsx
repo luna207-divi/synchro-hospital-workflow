@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Bell, 
   CheckCheck, 
@@ -11,29 +11,52 @@ import {
   Clock, 
   ChevronRight,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Settings,
+  Trash2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { NotificationPreferencesModal } from './NotificationPreferencesModal';
 import './NotificationPanel.css';
 
 export const NotificationPanel = ({
   isOpen,
   onClose,
-  notifications,
+  notifications = [],
   onMarkAsRead,
   onMarkAllAsRead,
   onViewAllAlerts,
-  onNotificationClick
+  onNotificationClick,
+  onAcknowledge,
+  onDismiss
 }) => {
+  const navigate = useNavigate();
+  const [isPrefModalOpen, setIsPrefModalOpen] = useState(false);
+
   if (!isOpen) return null;
 
-  // Group notifications by severity
-  const criticalList = notifications.filter(n => n.group === 'Critical');
-  const attentionList = notifications.filter(n => n.group === 'Attention');
-  const infoList = notifications.filter(n => n.group === 'Information');
+  // Group notifications by severity/group
+  const criticalList = notifications.filter(n => n.group === 'Critical' || n.priority === 'CRITICAL' || n.severity === 'CRITICAL');
+  const attentionList = notifications.filter(n => n.group === 'Attention' || n.priority === 'HIGH' || n.severity === 'ATTENTION');
+  const infoList = notifications.filter(n => n.group === 'Information' || n.priority === 'MEDIUM' || n.priority === 'LOW' || n.severity === 'INFORMATION');
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter(n => !n.isRead && !n.is_read).length;
+
+  const handleCardClick = (item) => {
+    if (onMarkAsRead) onMarkAsRead(item.id);
+
+    if (item.actionRoute) {
+      navigate(item.actionRoute);
+      onClose();
+    } else if (item.actionUrl || item.action_url) {
+      navigate(item.actionUrl || item.action_url);
+      onClose();
+    } else if (onNotificationClick) {
+      onNotificationClick(item);
+    }
+  };
 
   return (
     <div className="ot-notification-panel ot-card" onClick={(e) => e.stopPropagation()}>
@@ -52,11 +75,21 @@ export const NotificationPanel = ({
                 <Badge variant="teal" size="xs">All Caught Up</Badge>
               )}
             </div>
-            <span className="notif-sub font-mono">Real-time hospital alerts</span>
+            <span className="notif-sub font-mono">Proactive multi-channel alerts</span>
           </div>
         </div>
 
         <div className="notif-header-actions">
+          <button
+            className="btn-close-notif"
+            onClick={() => setIsPrefModalOpen(true)}
+            title="Notification Engine Preferences"
+            type="button"
+            style={{ marginRight: '4px' }}
+          >
+            <Settings size={14} />
+          </button>
+
           {unreadCount > 0 && (
             <button
               className="btn-mark-all-read font-mono"
@@ -65,7 +98,7 @@ export const NotificationPanel = ({
               title="Mark all notifications as read"
             >
               <CheckCheck size={13} />
-              <span>Mark all as read</span>
+              <span>Mark all read</span>
             </button>
           )}
           <button className="btn-close-notif" onClick={onClose} aria-label="Close notifications">
@@ -74,8 +107,15 @@ export const NotificationPanel = ({
         </div>
       </div>
 
-      {/* 2. Notifications Body (Grouped by Critical, Attention, Information) */}
+      {/* 2. Notifications Body */}
       <div className="notification-panel-body">
+        {notifications.length === 0 && (
+          <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Bell size={28} style={{ opacity: 0.4, marginBottom: '8px' }} />
+            <p className="font-mono" style={{ fontSize: '0.8rem', margin: 0 }}>No active notifications</p>
+          </div>
+        )}
+
         {/* Critical Group */}
         {criticalList.length > 0 && (
           <div className="notif-group-section">
@@ -91,25 +131,22 @@ export const NotificationPanel = ({
               {criticalList.map((item) => (
                 <div
                   key={item.id}
-                  className={`notif-item-card severity-critical ${!item.isRead ? 'is-unread' : 'is-read'}`}
-                  onClick={() => {
-                    onNotificationClick(item);
-                    if (!item.isRead) onMarkAsRead(item.id);
-                  }}
+                  className={`notif-item-card severity-critical ${!(item.isRead || item.is_read) ? 'is-unread' : 'is-read'}`}
+                  onClick={() => handleCardClick(item)}
                 >
                   <div className="notif-card-top">
                     <div className="notif-dept-row">
-                      {!item.isRead && <span className="unread-pulse-dot dot-red" />}
-                      <Badge variant={item.deptPillar} size="xs">{item.department}</Badge>
-                      <span className="notif-time font-mono">{item.time}</span>
+                      {!(item.isRead || item.is_read) && <span className="unread-pulse-dot dot-red" />}
+                      <Badge variant={item.deptPillar || 'red'} size="xs">{item.department || 'ALERT'}</Badge>
+                      <span className="notif-time font-mono">{item.time || 'Just now'}</span>
                     </div>
 
-                    {!item.isRead && (
+                    {!(item.isRead || item.is_read) && (
                       <button
                         className="btn-mark-single-read font-mono"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onMarkAsRead(item.id);
+                          if (onMarkAsRead) onMarkAsRead(item.id);
                         }}
                         type="button"
                         title="Mark as read"
@@ -121,7 +158,14 @@ export const NotificationPanel = ({
                   </div>
 
                   <h4 className="notif-title font-display">{item.title}</h4>
-                  <p className="notif-desc">{item.desc}</p>
+                  <p className="notif-desc">{item.message || item.desc}</p>
+                  
+                  {item.actionLabel && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                      <span>{item.actionLabel}</span>
+                      <ChevronRight size={12} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -143,25 +187,22 @@ export const NotificationPanel = ({
               {attentionList.map((item) => (
                 <div
                   key={item.id}
-                  className={`notif-item-card severity-attention ${!item.isRead ? 'is-unread' : 'is-read'}`}
-                  onClick={() => {
-                    onNotificationClick(item);
-                    if (!item.isRead) onMarkAsRead(item.id);
-                  }}
+                  className={`notif-item-card severity-attention ${!(item.isRead || item.is_read) ? 'is-unread' : 'is-read'}`}
+                  onClick={() => handleCardClick(item)}
                 >
                   <div className="notif-card-top">
                     <div className="notif-dept-row">
-                      {!item.isRead && <span className="unread-pulse-dot dot-amber" />}
-                      <Badge variant={item.deptPillar} size="xs">{item.department}</Badge>
-                      <span className="notif-time font-mono">{item.time}</span>
+                      {!(item.isRead || item.is_read) && <span className="unread-pulse-dot dot-amber" />}
+                      <Badge variant={item.deptPillar || 'indigo'} size="xs">{item.department || 'OT'}</Badge>
+                      <span className="notif-time font-mono">{item.time || 'Just now'}</span>
                     </div>
 
-                    {!item.isRead && (
+                    {!(item.isRead || item.is_read) && (
                       <button
                         className="btn-mark-single-read font-mono"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onMarkAsRead(item.id);
+                          if (onMarkAsRead) onMarkAsRead(item.id);
                         }}
                         type="button"
                         title="Mark as read"
@@ -173,7 +214,14 @@ export const NotificationPanel = ({
                   </div>
 
                   <h4 className="notif-title font-display">{item.title}</h4>
-                  <p className="notif-desc">{item.desc}</p>
+                  <p className="notif-desc">{item.message || item.desc}</p>
+                  
+                  {item.actionLabel && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                      <span>{item.actionLabel}</span>
+                      <ChevronRight size={12} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -195,25 +243,22 @@ export const NotificationPanel = ({
               {infoList.map((item) => (
                 <div
                   key={item.id}
-                  className={`notif-item-card severity-info ${!item.isRead ? 'is-unread' : 'is-read'}`}
-                  onClick={() => {
-                    onNotificationClick(item);
-                    if (!item.isRead) onMarkAsRead(item.id);
-                  }}
+                  className={`notif-item-card severity-info ${!(item.isRead || item.is_read) ? 'is-unread' : 'is-read'}`}
+                  onClick={() => handleCardClick(item)}
                 >
                   <div className="notif-card-top">
                     <div className="notif-dept-row">
-                      {!item.isRead && <span className="unread-pulse-dot dot-teal" />}
-                      <Badge variant={item.deptPillar} size="xs">{item.department}</Badge>
-                      <span className="notif-time font-mono">{item.time}</span>
+                      {!(item.isRead || item.is_read) && <span className="unread-pulse-dot dot-teal" />}
+                      <Badge variant={item.deptPillar || 'blue'} size="xs">{item.department || 'SYSTEM'}</Badge>
+                      <span className="notif-time font-mono">{item.time || 'Just now'}</span>
                     </div>
 
-                    {!item.isRead && (
+                    {!(item.isRead || item.is_read) && (
                       <button
                         className="btn-mark-single-read font-mono"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onMarkAsRead(item.id);
+                          if (onMarkAsRead) onMarkAsRead(item.id);
                         }}
                         type="button"
                         title="Mark as read"
@@ -225,7 +270,14 @@ export const NotificationPanel = ({
                   </div>
 
                   <h4 className="notif-title font-display">{item.title}</h4>
-                  <p className="notif-desc">{item.desc}</p>
+                  <p className="notif-desc">{item.message || item.desc}</p>
+
+                  {item.actionLabel && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                      <span>{item.actionLabel}</span>
+                      <ChevronRight size={12} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -238,15 +290,22 @@ export const NotificationPanel = ({
         <button
           className="btn-view-all-alerts font-mono"
           onClick={() => {
-            onViewAllAlerts();
+            navigate('/notifications');
             onClose();
           }}
           type="button"
         >
-          <span>View all alerts</span>
+          <span>View all notifications & preferences</span>
           <ChevronRight size={13} />
         </button>
       </div>
+
+      {/* Preferences Modal */}
+      <NotificationPreferencesModal
+        isOpen={isPrefModalOpen}
+        onClose={() => setIsPrefModalOpen(false)}
+      />
     </div>
   );
 };
+

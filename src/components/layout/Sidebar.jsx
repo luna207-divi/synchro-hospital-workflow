@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Workflow, 
   AlertTriangle, 
@@ -8,27 +9,51 @@ import {
   HelpCircle,
   Bell,
   Package,
-  FileBarChart
+  FileBarChart,
+  Users,
+  Activity
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
+import { useAuth } from '../../context/AuthContext';
+import { useWorkflow } from '../../context/WorkflowContext';
+import { getDashboardForRole } from '../../config/roles';
+import { SynchroLogo } from '../common/SynchroLogo';
 import './Sidebar.css';
 
 /**
- * SYNCHRO Sidebar Navigation
- * 
- * Glassmorphic panel with:
- * - Synchro brand mark + tagline
- * - 6 primary views grouped by function
- * - Live system status indicator
- * - Bottom utility nav (Settings, Help)
+ * SYNCHRO Sidebar Navigation Component
+ * Enterprise Hospital Operations Navigation
  */
-export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
-  const { isNavAllowed } = useRole();
+export const Sidebar = ({ activeNav: activeNavProp, onNavSelect }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isNavAllowed, activeRole } = useRole();
+  const { profile } = useAuth();
+  const workflow = useWorkflow();
+
+  const activeAlertsCount = (workflow.alerts || []).filter(a => a.status !== 'Resolved').length;
+
+  // Determine active nav item from route
+  const currentSegment = location.pathname.split('/').filter(Boolean)[1] || location.pathname.split('/').filter(Boolean)[0] || 'flow-board';
+  const activeNav = activeNavProp || currentSegment;
+
+  const handleBrandClick = () => {
+    const userRole = profile?.role || activeRole?.id;
+    const targetDashboard = getDashboardForRole(userRole);
+    navigate(targetDashboard);
+  };
 
   const allSections = [
     {
       title: 'Operations',
       items: [
+        {
+          id: 'frontdesk',
+          label: 'Front Desk',
+          icon: Users,
+          section: 'Operations',
+          description: 'Intake & patient registration'
+        },
         {
           id: 'flow-board',
           label: 'Flow Board',
@@ -39,9 +64,16 @@ export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
         {
           id: 'live-flow',
           label: 'Live Flow',
-          icon: Workflow,
+          icon: Activity,
           section: 'Operations',
           description: 'See hospital move live'
+        },
+        {
+          id: 'patients',
+          label: 'Patients',
+          icon: Users,
+          section: 'Operations',
+          description: 'Admissions & patient profiles'
         },
         {
           id: 'readiness',
@@ -67,22 +99,22 @@ export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
           label: 'Alerts',
           icon: Bell,
           section: 'Intelligence',
-          alertCount: 3,
-          description: 'Active issues & events'
+          alertCount: activeAlertsCount > 0 ? activeAlertsCount : 3,
+          description: 'Active issues & exceptions'
         },
         {
           id: 'analytics',
           label: 'Analytics',
           icon: BarChart3,
           section: 'Intelligence',
-          description: 'Utilization & delays'
+          description: 'Utilization & bottleneck metrics'
         },
         {
           id: 'reports',
           label: 'Reports',
           icon: FileBarChart,
           section: 'Intelligence',
-          description: 'Management summaries'
+          description: 'Executive management reports'
         }
       ]
     }
@@ -113,25 +145,19 @@ export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
 
   return (
     <aside className="synchro-sidebar">
-      {/* Brand Section */}
-      <div className="sidebar-brand">
-        <div className="brand-mark">
-          <span>S</span>
-        </div>
-        <div className="brand-text">
-          <span className="brand-name">Synchro</span>
-          <span className="brand-tagline">Hospital Workflow, In Sync</span>
-        </div>
+      {/* ── Brand Header ───────────────────────────────────── */}
+      <div className="sidebar-brand" onClick={handleBrandClick} style={{ cursor: 'pointer' }}>
+        <SynchroLogo size="md" variant="dark" showTagline={true} />
       </div>
 
-      {/* Main Navigation */}
+      {/* Navigation List */}
       <nav className="sidebar-nav">
         {filteredSections.map((section) => (
           <div key={section.title} className="nav-group">
             <div className="nav-group-label">{section.title}</div>
             {section.items.map((item) => {
               const Icon = item.icon;
-              const isActive = activeNav === item.id;
+              const isActive = activeNav === item.id || (activeNav === 'doctor' && item.id === 'flow-board');
               return (
                 <button
                   key={item.id}
@@ -145,9 +171,9 @@ export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
                     <span className="nav-item-label">{item.label}</span>
                     <span className="nav-item-desc">{item.description}</span>
                   </div>
-                  {item.alertCount && (
+                  {item.alertCount ? (
                     <span className="nav-item-badge">{item.alertCount}</span>
-                  )}
+                  ) : null}
                 </button>
               );
             })}
@@ -155,11 +181,11 @@ export const Sidebar = ({ activeNav = 'flow-board', onNavSelect }) => {
         ))}
       </nav>
 
-      {/* Bottom Section */}
+      {/* Live System Indicator Footer */}
       <div className="sidebar-bottom">
         <div className="sidebar-live-indicator">
           <span className="live-dot" />
-          <span className="live-text">System Online • All Services Active</span>
+          <span className="live-text">System Online • Operational</span>
         </div>
         {bottomItems.map((item) => {
           const Icon = item.icon;

@@ -8,19 +8,23 @@ import {
   AlertTriangle, 
   ArrowRight,
   Filter,
-  Layers
+  Layers,
+  Zap,
+  CreditCard
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
+import { useWorkflowEngine } from '../../hooks/useWorkflowEngine';
 import './WorkflowTimeline.css';
 
 /**
- * Recent Workflow Events Component
- * Chronological multi-department live feed linking Admissions, OT, and CSSD.
+ * Recent Workflow Events Component (Single Source of Truth Live Stream)
+ * Chronological multi-department live feed linking Admissions, OT, CSSD, Doctor, and Billing.
  */
 export const WorkflowTimeline = () => {
   const [filterDept, setFilterDept] = useState('ALL');
+  const { events: liveEvents } = useWorkflowEngine();
 
-  const events = [
+  const defaultEvents = [
     {
       id: 'EVT-481',
       time: '11:42 AM',
@@ -31,7 +35,7 @@ export const WorkflowTimeline = () => {
       entityId: 'RFID #9921-CV',
       status: 'completed',
       statusLabel: 'Sterile Passed',
-      details: 'Dual-biological indicator passed 134°C steam validation. Delivered to OT Suite 04 sterile core by Technician S. Rao.'
+      details: 'Dual-biological indicator passed 134°C steam validation. Delivered to OT Suite 04 sterile core.'
     },
     {
       id: 'EVT-480',
@@ -40,63 +44,81 @@ export const WorkflowTimeline = () => {
       deptPillar: 'indigo',
       icon: Activity,
       title: 'OT-01 Surgery Milestone: Prosthesis Implantation',
-      entityId: 'Case #1048 (R. Vance)',
+      entityId: 'Case #1048',
       status: 'in-progress',
       statusLabel: 'Milestone Met',
-      details: 'Dr. Miller completed femoral reaming. Cup positioning optimal. Anticipated skin closure in 35 mins.'
+      details: 'Surgeon completed femoral reaming. Cup positioning optimal. Skin closure in progress.'
     },
     {
       id: 'EVT-479',
       time: '11:20 AM',
-      dept: 'Admissions',
+      dept: 'FRONT_DESK',
       deptPillar: 'blue',
       icon: UserCheck,
       title: 'Patient Transfer Dispatched: Elena Rostova',
       entityId: 'MRN-9204',
       status: 'in-progress',
       statusLabel: 'En Route',
-      details: 'Porter dispatched from Pre-Op Bay 4 to OT-02 holding zone with full clinical chart and IV access verified.'
-    },
-    {
-      id: 'EVT-478',
-      time: '11:05 AM',
-      dept: 'CSSD',
-      deptPillar: 'teal',
-      icon: PackageCheck,
-      title: 'AI Delay Alert Triggered on Chamber #02',
-      entityId: 'Tray #CSSD-ORTHO-09',
-      status: 'warning',
-      statusLabel: 'Delay Hold',
-      details: 'Sterilization cycle completed with 14m extended aeration cooldown. OT-03 coordinator notified to delay patient pre-op induction.'
-    },
-    {
-      id: 'EVT-477',
-      time: '10:48 AM',
-      dept: 'OT',
-      deptPillar: 'indigo',
-      icon: Activity,
-      title: 'OT-04 Rapid Turnover Completed in 18 Minutes',
-      entityId: 'Suite OT-04',
-      status: 'completed',
-      statusLabel: 'Benchmark +7m',
-      details: 'Environmental sanitation, surface disinfection, and sterile field setup verified by Nursing Lead J. Doe.'
-    },
-    {
-      id: 'EVT-476',
-      time: '10:30 AM',
-      dept: 'Admissions',
-      deptPillar: 'blue',
-      icon: UserCheck,
-      title: 'Pre-Op Checklist 100% Completed: Sarah Jenkins',
-      entityId: 'MRN-7741',
-      status: 'completed',
-      statusLabel: 'Cleared',
-      details: 'Anesthesia risk evaluation (ASA-II), surgical marking, and consent dual-sign completed for 11:30 AM TKA procedure.'
+      details: 'Porter dispatched from Pre-Op Bay 4 to OT-02 holding zone with clinical chart verified.'
     }
   ];
 
-  const filteredEvents = events.filter(e => {
+  // Map live workflow engine events to UI presentation format
+  const mappedLiveEvents = liveEvents.map(evt => {
+    const timeStr = evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+    let deptPillar = 'blue';
+    let icon = Activity;
+    let title = evt.event_type;
+
+    if (evt.department === 'CSSD') {
+      deptPillar = 'teal';
+      icon = PackageCheck;
+    } else if (evt.department === 'OT' || evt.department === 'DOCTOR') {
+      deptPillar = 'indigo';
+      icon = Activity;
+    } else if (evt.department === 'FRONT_DESK' || evt.department === 'NURSING') {
+      deptPillar = 'blue';
+      icon = UserCheck;
+    } else if (evt.department === 'BILLING') {
+      deptPillar = 'purple';
+      icon = CreditCard;
+    }
+
+    if (evt.event_type === 'INSTRUMENT_READY') {
+      title = 'OT Instrument Ready — Pack Dispatched to OT';
+    } else if (evt.event_type === 'SURGERY_STARTED') {
+      title = 'Surgery Started — In Progress';
+    } else if (evt.event_type === 'SURGERY_COMPLETED') {
+      title = 'Surgery Completed — Turnover Started';
+    } else if (evt.event_type === 'PATIENT_REGISTERED') {
+      title = 'Patient Registered via Front Desk';
+    } else if (evt.event_type === 'PATIENT_ADMITTED') {
+      title = 'Patient Admitted to Pre-Op Ward';
+    } else if (evt.event_type === 'BILLING_CHARGE_CREATED') {
+      title = 'Billing Procedure Charge Auto-Generated';
+    }
+
+    return {
+      id: evt.event_id,
+      time: timeStr,
+      dept: evt.department || 'SYSTEM',
+      deptPillar,
+      icon,
+      title,
+      entityId: evt.surgery_id ? `Surgery: ${evt.surgery_id.slice(0, 8)}` : evt.patient_id ? `Patient: ${evt.patient_id.slice(0, 8)}` : 'System Event',
+      status: 'completed',
+      statusLabel: evt.new_status || 'Processed',
+      details: evt.metadata?.notes || evt.metadata?.description || `Transition: ${evt.previous_status || 'INIT'} → ${evt.new_status || 'COMPLETED'}`
+    };
+  });
+
+  const combinedEvents = [...mappedLiveEvents, ...defaultEvents].filter((evt, idx, self) => 
+    idx === self.findIndex((e) => e.id === evt.id)
+  );
+
+  const filteredEvents = combinedEvents.filter(e => {
     if (filterDept === 'ALL') return true;
+    if (filterDept === 'ADMISSIONS' && (e.dept === 'FRONT_DESK' || e.dept === 'NURSING')) return true;
     return e.dept.toUpperCase() === filterDept;
   });
 
@@ -106,15 +128,15 @@ export const WorkflowTimeline = () => {
         <div className="events-title-side">
           <div className="events-title-row">
             <h3 className="events-heading font-display">Recent Workflow Events</h3>
-            <span className="live-stream-badge font-mono">LIVE FEED</span>
+            <span className="live-stream-badge font-mono">LIVE REALTIME ENGINE</span>
           </div>
           <span className="events-subhead">
-            Cross-department operational milestones linking Admissions, Theatres, and CSSD Sterilization
+            Cross-department operational milestones linking Front Desk, Nursing, Doctor, CSSD, and Billing
           </span>
         </div>
 
         <div className="events-dept-filter">
-          {['ALL', 'ADMISSIONS', 'OT', 'CSSD'].map((dept) => (
+          {['ALL', 'ADMISSIONS', 'OT', 'CSSD', 'BILLING'].map((dept) => (
             <button
               key={dept}
               className={`dept-filter-btn ${filterDept === dept ? 'is-active' : ''}`}
@@ -135,7 +157,7 @@ export const WorkflowTimeline = () => {
               {/* Time Column */}
               <div className="event-time-col">
                 <span className="event-time font-mono">{evt.time}</span>
-                <span className="event-id font-mono">{evt.id}</span>
+                <span className="event-id font-mono">{evt.id.slice(0, 10)}</span>
               </div>
 
               {/* Node / Department Icon */}

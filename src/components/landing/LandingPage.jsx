@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, ArrowRight, Play, CheckCircle2, ShieldCheck, 
   Activity, User, Stethoscope, Package, AlertTriangle, 
   XCircle, Clock, Zap, ChevronRight, Layers, Workflow, BarChart3, Timer
 } from 'lucide-react';
+import { SynchroLogo } from '../common/SynchroLogo';
 import { Button } from '../common/Button';
 import './LandingPage.css';
 
@@ -13,6 +15,12 @@ import './LandingPage.css';
    ============================================================ */
 
 export const LandingPage = ({ onEnterPlatform }) => {
+  const navigate = useNavigate();
+
+  const handleEnter = (e) => {
+    if (typeof onEnterPlatform === 'function') return onEnterPlatform(e);
+    navigate('/login');
+  };
 
   // Scroll reveal observer
   useEffect(() => {
@@ -34,24 +42,13 @@ export const LandingPage = ({ onEnterPlatform }) => {
     <div className="synchro-landing">
       {/* ── 1. Top Navigation Bar ────────────────────────────── */}
       <header className="landing-nav">
-        <div className="landing-brand">
-          <div className="landing-brand-mark">S</div>
-          <span className="landing-brand-text">SYNCHRO</span>
+        <div className="landing-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
+          <SynchroLogo size="md" variant="dark" />
         </div>
 
-        <ul className="landing-nav-links">
-          <li className="nav-link-item">Platform</li>
-          <li className="nav-link-item">Workflow</li>
-          <li className="nav-link-item">Modules</li>
-          <li className="nav-link-item">Enterprise</li>
-        </ul>
-
         <div className="landing-nav-actions">
-          <Button variant="ghost" size="sm" onClick={onEnterPlatform}>
+          <Button variant="primary" size="sm" onClick={handleEnter}>
             Sign In
-          </Button>
-          <Button variant="primary" size="sm" icon={ArrowRight} onClick={onEnterPlatform}>
-            Enter Synchro
           </Button>
         </div>
       </header>
@@ -75,11 +72,11 @@ export const LandingPage = ({ onEnterPlatform }) => {
           </p>
 
           <div className="hero-cta-row">
-            <Button variant="primary" size="lg" icon={ArrowRight} onClick={onEnterPlatform}>
-              Explore Synchro
+            <Button variant="primary" size="lg" icon={ArrowRight} onClick={handleEnter}>
+              Sign In
             </Button>
-            <Button variant="secondary" size="lg" icon={Play} onClick={onEnterPlatform}>
-              See How It Works
+            <Button variant="secondary" size="lg" icon={ArrowRight} onClick={handleEnter}>
+              Log In
             </Button>
           </div>
         </div>
@@ -354,8 +351,8 @@ export const LandingPage = ({ onEnterPlatform }) => {
         <p className="landing-cta-sub">
           Experience the next generation of hospital workflow automation.
         </p>
-        <Button variant="primary" size="lg" icon={ArrowRight} onClick={onEnterPlatform}>
-          Enter Synchro
+        <Button variant="primary" size="lg" icon={ArrowRight} onClick={handleEnter}>
+          Sign In
         </Button>
       </section>
     </div>

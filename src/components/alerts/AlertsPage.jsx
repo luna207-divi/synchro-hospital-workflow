@@ -11,6 +11,7 @@ import {
   Download, 
   Check
 } from 'lucide-react';
+import { useWorkflow } from '../../context/WorkflowContext';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { SearchInput } from '../common/Input';
@@ -18,130 +19,15 @@ import { AlertDrawer } from './AlertDrawer';
 import './AlertsPage.css';
 
 export const AlertsPage = () => {
-  // Single unified filter state supporting: 'All', 'Critical', 'Warning', 'Information', 'Admissions', 'OT', 'CSSD'
+  const workflow = useWorkflow();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAlert, setSelectedAlert] = useState(null);
 
-  const [alerts, setAlerts] = useState([
-    {
-      id: 'ALT-2094',
-      severity: 'Critical',
-      title: 'Expired sterile pack detected',
-      department: 'CSSD',
-      deptPillar: 'teal',
-      relatedEntity: 'Tray #CSSD-EXP-09 • OT-01 • Patient: Robert Vance (MRN-8419)',
-      timeDetected: '3 mins ago',
-      status: 'Active',
-      assignedTeam: 'CSSD Sterilization Lead',
-      reason: 'Sterility shelf-life expired 2 hours prior to case dispatch. Autoclave biological spore strip validation was stamped on Aug 03.',
-      recommendedAction: 'Immediately quarantine Tray #CSSD-EXP-09 from sterile storage. Dispatch replacement backup Tray #CSSD-TH-04 currently staged in Central Sterile Vault.',
-      primaryActionLabel: 'Dispatch Replacement Tray',
-      estResolutionTime: '4 mins',
-      timeline: [
-        { time: '11:42 AM', title: 'RFID Reader Pinged at OT-01 holding core', desc: 'Tray scanned at sterile perimeter sensor.' },
-        { time: '11:43 AM', title: 'AI Sterility Validation Engine Flagged Expiry', desc: 'Shelf-life expiration algorithm detected 72-hour threshold exceedance.', isFlagged: true },
-        { time: '11:44 AM', title: 'Alert Escalated to CSSD & OT Charge Nurse', desc: 'Surgical pack hold placed on EMR case schedule.' }
-      ]
-    },
-    {
-      id: 'ALT-2093',
-      severity: 'Critical',
-      title: 'Required instrument pack unavailable',
-      department: 'CSSD',
-      deptPillar: 'teal',
-      relatedEntity: 'Pack #CSSD-00125 • OT-03 • Patient: Marcus Chen (MRN-3318)',
-      timeDetected: '14 mins ago',
-      status: 'Active',
-      assignedTeam: 'Surgical Supply Logistics',
-      reason: 'Orthopedic Power Tool Set #04 is undergoing 4-stage autoclave cooling cycle (Chamber #02). Tray not released for next ACL surgery.',
-      recommendedAction: 'Expedite reserve fast-track Tray #99-B from Reserve Vault or reroute sterile pack from completed morning case in OT-01.',
-      primaryActionLabel: 'Expedite Reserve Tray #99-B',
-      estResolutionTime: '6 mins',
-      timeline: [
-        { time: '11:15 AM', title: 'Case #1050 Triad Verification Checked', desc: 'CSSD readiness returned HOLD state.' },
-        { time: '11:22 AM', title: 'Autoclave Cooldown Lag Identified', desc: 'Estimated completion 11:58 AM (+22m start delay).', isFlagged: true }
-      ]
-    },
-    {
-      id: 'ALT-2092',
-      severity: 'Warning',
-      title: 'OT-03 turnover exceeded expected duration',
-      department: 'OT',
-      deptPillar: 'indigo',
-      relatedEntity: 'OT Suite 03 • Turnover: 34m (Benchmark: 25m)',
-      timeDetected: '19 mins ago',
-      status: 'Active',
-      assignedTeam: 'OT Charge Nurse',
-      reason: 'Environmental sanitation team delayed due to extensive aerosolized suction canister cleanup after complex trauma case.',
-      recommendedAction: 'Assign secondary environmental sanitation technician to assist OT-03 turnover lead.',
-      primaryActionLabel: 'Dispatch Assist Tech',
-      estResolutionTime: '8 mins',
-      timeline: [
-        { time: '11:00 AM', title: 'Patient Out of Room', desc: 'Surgical dressing completed and patient transferred to PACU.' },
-        { time: '11:25 AM', title: '25m Standard Turnover Window Elapsed', desc: 'Sanitation incomplete notification triggered.', isFlagged: true }
-      ]
-    },
-    {
-      id: 'ALT-2091',
-      severity: 'Warning',
-      title: 'Patient transfer pending',
-      department: 'Admissions',
-      deptPillar: 'blue',
-      relatedEntity: 'Patient: Elena Rostova (MRN-9204) • Pre-Op Bay 3 to OT-02',
-      timeDetected: '24 mins ago',
-      status: 'Active',
-      assignedTeam: 'Patient Transport Lead',
-      reason: 'Porter transport request logged at 11:00 AM. Assigned porter currently delayed in Radiology transport.',
-      recommendedAction: 'Reassign transport porter from Ward 4C reserve to transfer patient Elena Rostova to OT-02 holding zone.',
-      primaryActionLabel: 'Reassign Reserve Porter',
-      estResolutionTime: '5 mins',
-      timeline: [
-        { time: '11:00 AM', title: 'Transfer Order Generated', desc: 'Anesthesiology sign-off verified.' },
-        { time: '11:20 AM', title: '20m Transport Threshold Exceeded', desc: 'Automatic delay warning generated for OT-02.', isFlagged: true }
-      ]
-    },
-    {
-      id: 'ALT-2090',
-      severity: 'Information',
-      title: 'Patient P-1024 ready for OT',
-      department: 'Admissions',
-      deptPillar: 'blue',
-      relatedEntity: 'Patient: Robert Vance (MRN-8419) • Pre-Op Clearance Complete',
-      timeDetected: '28 mins ago',
-      status: 'Active',
-      assignedTeam: 'Admissions Triage',
-      reason: 'All pre-operative surgical checklists, consent forms, IV access, and surgical site markings confirmed 100%.',
-      recommendedAction: 'Patient cleared for transfer when OT-01 signals incision room prep readiness.',
-      primaryActionLabel: 'Signal Theatre Ready',
-      estResolutionTime: 'Immediate',
-      timeline: [
-        { time: '10:45 AM', title: 'Anesthesia Clearance Approved', desc: 'ASA Physical Status classification confirmed.' },
-        { time: '11:05 AM', title: 'Checklist 100% Validated', desc: 'Patient marked Ready in EMR Triad.' }
-      ]
-    },
-    {
-      id: 'ALT-2089',
-      severity: 'Warning',
-      title: 'Consent missing for scheduled procedure',
-      department: 'Admissions',
-      deptPillar: 'blue',
-      relatedEntity: 'Patient: Sarah Jenkins (MRN-7741) • OT-04 (11:30 AM)',
-      timeDetected: '35 mins ago',
-      status: 'Active',
-      assignedTeam: 'Pre-Op Coordinator',
-      reason: 'Informed surgical consent signature missing in electronic health record for 11:30 AM Total Knee Arthroplasty.',
-      recommendedAction: 'Send urgent mobile e-Sign tablet to Pre-Op Bay 2 for attending surgeon and patient signature confirmation.',
-      primaryActionLabel: 'Dispatch e-Sign Tablet',
-      estResolutionTime: '7 mins',
-      timeline: [
-        { time: '10:30 AM', title: 'Chart Ingestion Validated', desc: 'Missing consent document flagged in automated pre-op audit.', isFlagged: true }
-      ]
-    }
-  ]);
+  const alerts = workflow.alerts || [];
 
   const handleResolveAlert = (id) => {
-    setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'Resolved' } : a));
+    workflow.resolveAlert(id);
   };
 
   const filterOptions = [
@@ -163,10 +49,11 @@ export const AlertsPage = () => {
     else if (activeFilter === 'OT') matchesFilter = a.department === 'OT';
     else if (activeFilter === 'CSSD') matchesFilter = a.department === 'CSSD';
 
+    const q = searchQuery.toLowerCase();
     const matchesSearch = searchQuery === '' || 
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.relatedEntity.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.id.toLowerCase().includes(searchQuery.toLowerCase());
+      a.title.toLowerCase().includes(q) ||
+      (a.relatedEntity && a.relatedEntity.toLowerCase().includes(q)) ||
+      a.id.toLowerCase().includes(q);
 
     return matchesFilter && matchesSearch;
   });
@@ -174,6 +61,7 @@ export const AlertsPage = () => {
   const criticalCount = alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').length;
   const warningCount = alerts.filter(a => a.severity === 'Warning' && a.status !== 'Resolved').length;
   const infoCount = alerts.filter(a => a.severity === 'Information' && a.status !== 'Resolved').length;
+  const resolvedTodayCount = alerts.filter(a => a.status === 'Resolved').length + 14;
 
   return (
     <div className="ot-alerts-page">
@@ -181,11 +69,11 @@ export const AlertsPage = () => {
       <div className="alerts-page-header">
         <div className="alerts-header-text">
           <div className="alerts-header-topline">
-            <h1 className="alerts-title font-display">Alerts & Exceptions</h1>
+            <h1 className="alerts-title font-display">Alerts & Exceptions Command</h1>
             <Badge variant="red" size="sm" dot>{criticalCount} Critical Active</Badge>
           </div>
           <p className="alerts-subtitle">
-            Real-time issues requiring attention across hospital operations.
+            Real-time automated incident detection across Admissions, OTs, and CSSD.
           </p>
         </div>
 
@@ -194,7 +82,7 @@ export const AlertsPage = () => {
             Refresh Stream
           </Button>
           <Button size="sm" variant="secondary" icon={Download}>
-            Export Log
+            Export Incident Log
           </Button>
         </div>
       </div>
@@ -238,7 +126,7 @@ export const AlertsPage = () => {
           <div className="kpi-card-content">
             <span className="kpi-label font-mono">RESOLVED TODAY</span>
             <div className="kpi-val-row">
-              <span className="kpi-num text-teal font-display">14</span>
+              <span className="kpi-num text-teal font-display">{resolvedTodayCount}</span>
               <span className="kpi-sub font-mono">Avg resolution 7.2m</span>
             </div>
           </div>
@@ -298,7 +186,6 @@ export const AlertsPage = () => {
                   className={`alert-table-row ${isSelected ? 'row-selected' : ''} row-severity-${alt.severity.toLowerCase()}`}
                   onClick={() => setSelectedAlert(alt)}
                 >
-                  {/* Severity */}
                   <td>
                     <span className={`table-severity-pill pill-${alt.severity.toLowerCase()} font-mono`}>
                       {alt.severity === 'Critical' && <AlertOctagon size={11} />}
@@ -308,7 +195,6 @@ export const AlertsPage = () => {
                     </span>
                   </td>
 
-                  {/* Title */}
                   <td>
                     <div className="table-title-cell">
                       <span className="alert-table-title">{alt.title}</span>
@@ -316,34 +202,28 @@ export const AlertsPage = () => {
                     </div>
                   </td>
 
-                  {/* Department */}
                   <td>
-                    <Badge variant={alt.deptPillar} size="xs">{alt.department}</Badge>
+                    <Badge variant={alt.deptPillar || 'teal'} size="xs">{alt.department}</Badge>
                   </td>
 
-                  {/* Related Entity */}
                   <td>
                     <span className="table-related-entity font-mono">{alt.relatedEntity}</span>
                   </td>
 
-                  {/* Detected */}
                   <td>
                     <span className="table-detected-time font-mono">{alt.timeDetected}</span>
                   </td>
 
-                  {/* Status */}
                   <td>
                     <span className={`table-status-pill ${alt.status === 'Resolved' ? 'status-resolved' : 'status-active'} font-mono`}>
                       {alt.status}
                     </span>
                   </td>
 
-                  {/* Assigned Team */}
                   <td>
                     <span className="table-assigned-team">{alt.assignedTeam}</span>
                   </td>
 
-                  {/* Action */}
                   <td style={{ textAlign: 'right' }}>
                     <Button
                       size="xs"
@@ -367,7 +247,7 @@ export const AlertsPage = () => {
           <div className="alerts-empty-state">
             <CheckCircle2 size={32} className="text-teal" />
             <span className="empty-state-title">No Matching Exceptions</span>
-            <span className="empty-state-desc">All clinical workflows for "{activeFilter}" are operating within normal operational parameters.</span>
+            <span className="empty-state-desc">All clinical workflows for "{activeFilter}" are operating within normal parameters.</span>
           </div>
         )}
       </div>

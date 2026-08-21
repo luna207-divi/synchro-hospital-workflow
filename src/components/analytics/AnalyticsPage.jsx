@@ -18,28 +18,46 @@ import {
   ChevronRight,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles
+  Sparkles,
+  Users,
+  Bed,
+  Stethoscope,
+  Package
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { useDemo } from '../../context/DemoContext';
+import { useWorkflow } from '../../context/WorkflowContext';
 import { ActionableInsights } from './ActionableInsights';
 import './AnalyticsPage.css';
 
 export const AnalyticsPage = () => {
   const { demoState } = useDemo();
+  const workflow = useWorkflow();
   const [dateRange, setDateRange] = useState('Last 7 Days');
   const [theatreFilter, setTheatreFilter] = useState('All Theatres');
   const [procedureFilter, setProcedureFilter] = useState('All Procedures');
   const [deptFilter, setDeptFilter] = useState('All Departments');
 
+  const m = workflow.metrics || {
+    beds: { total: 420, occupied: 317, available: 103 },
+    cssd: { total: 156, sterile: 142, sterilizing: 9, qc: 3, expired: 2 },
+    theatres: { total: 12, active: 7, scheduled: 3, available: 2 },
+    admissionsToday: 16,
+    dischargesToday: 11,
+    avgWaitMinutes: 34,
+    otUtilization: 82,
+    cssdReadiness: 94
+  };
+
   // 1. OT Utilization Data
-  const otUtilizationData = [
-    { suite: 'OT-01', specialty: 'Orthopedics', utilization: 89.2, target: 80.0, cases: 28, status: 'Optimal' },
-    { suite: 'OT-02', specialty: 'General & Lap', utilization: 81.4, target: 80.0, cases: 24, status: 'Optimal' },
-    { suite: 'OT-03', specialty: 'Sports Medicine', utilization: 74.6, target: 80.0, cases: 19, status: 'Under Benchmark' },
-    { suite: 'OT-04', specialty: 'Cardiovascular', utilization: 92.0, target: 80.0, cases: 22, status: 'High Utilization' }
-  ];
+  const theatres = workflow.operatingTheatres || [];
+  const surgeries = workflow.surgeries || [];
+  const otUtilizationData = theatres.slice(0, 8).map(t => {
+    const cases = surgeries.filter(s => s.theatre_id === t.id).length + (t.status === 'ACTIVE' ? 2 : 1);
+    const utilization = t.status === 'ACTIVE' ? Math.min(96, 75 + (cases * 5)) : 55;
+    return { suite: t.suite_code, specialty: t.name, utilization, target: 80.0, cases, status: utilization >= 80 ? 'Optimal' : 'Under Benchmark' };
+  });
 
   // 2. Delay Analysis Breakdown
   const delayCauses = [
@@ -85,7 +103,7 @@ export const AnalyticsPage = () => {
       pillar: 'blue',
       metrics: [
         { label: 'Pre-Op Clearance Rate', value: '96.2%', trend: '+1.4%', good: true },
-        { label: 'Avg Check-in to Ready', value: '42 mins', trend: '-4m', good: true },
+        { label: 'Avg Check-in to Ready', value: '34 mins', trend: '-12%', good: true },
         { label: 'Transport Punctuality', value: '86.4%', trend: '-2.1%', good: false }
       ]
     },
@@ -93,8 +111,8 @@ export const AnalyticsPage = () => {
       name: 'Operating Theatres',
       pillar: 'indigo',
       metrics: [
-        { label: 'OT Utilization Rate', value: '84.3%', trend: '+3.8%', good: true },
-        { label: 'On-Time Surgery Start', value: '88.9%', trend: '+4.2%', good: true },
+        { label: 'OT Utilization Rate', value: '82%', trend: '+8.4%', good: true },
+        { label: 'Active OTs Running', value: '7 / 12', trend: '+2 OTs', good: true },
         { label: 'Average Turnover Time', value: '21.4 mins', trend: '-3.6m', good: true }
       ]
     },
@@ -102,9 +120,9 @@ export const AnalyticsPage = () => {
       name: 'CSSD Sterilization',
       pillar: 'teal',
       metrics: [
-        { label: 'Sterile Pack Availability', value: '94.1%', trend: '+0.8%', good: true },
-        { label: 'Spore Test Pass Rate', value: '100%', trend: '0.0%', good: true },
-        { label: 'Sterile Expired Incident Rate', value: '0.4%', trend: '-0.2%', good: true }
+        { label: 'CSSD Readiness Score', value: '94%', trend: '+1.8%', good: true },
+        { label: 'Sterile Packs Ready', value: '42 packs', trend: '91%', good: true },
+        { label: 'Quarantined / Expired', value: '3 packs', trend: '-1 pack', good: true }
       ]
     }
   ];
@@ -115,21 +133,78 @@ export const AnalyticsPage = () => {
       <div className="analytics-page-header">
         <div className="analytics-title-group">
           <div className="analytics-title-row">
-            <h1 className="analytics-heading font-display">Operational Analytics</h1>
-            <Badge variant="blue" size="sm" dot>Live Telemetry Aggregation</Badge>
+            <h1 className="analytics-heading font-display">Hospital Operations Analytics</h1>
+            <Badge variant="blue" size="sm" dot>Live Telemetry Engine</Badge>
           </div>
           <p className="analytics-subtitle">
-            Understand where hospital workflow time is being lost.
+            Real-time insight into patient throughput, bed capacity, OT efficiency, and CSSD sterility readiness.
           </p>
         </div>
 
         <div className="analytics-header-actions">
           <Button size="sm" variant="secondary" icon={RefreshCw}>
-            Refresh Data
+            Refresh Telemetry
           </Button>
           <Button size="sm" variant="secondary" icon={Download}>
-            Export Report
+            Export Executive Report
           </Button>
+        </div>
+      </div>
+
+      {/* Top 6 KPI Header Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '14px', marginBottom: '20px' }}>
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>PATIENTS TODAY</span>
+            <Users size={18} style={{ color: 'var(--primary-blue)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-navy-head)' }}>48</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Registered Patients</span>
+        </div>
+
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>ADMISSIONS</span>
+            <Bed size={18} style={{ color: 'var(--primary-blue)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--primary-blue)' }}>16</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Today's Admissions</span>
+        </div>
+
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>DISCHARGES</span>
+            <CheckCircle2 size={18} style={{ color: 'var(--state-teal)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--state-teal-text)' }}>11</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Cleared Discharges</span>
+        </div>
+
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>OT UTILIZATION</span>
+            <Stethoscope size={18} style={{ color: 'var(--status-cyan-text)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-navy-head)' }}>82%</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>7 Active OTs</span>
+        </div>
+
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>AVG WAIT TIME</span>
+            <Clock size={18} style={{ color: 'var(--state-amber)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-navy-head)' }}>34 min</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Check-in to Surgery</span>
+        </div>
+
+        <div className="ot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>CSSD PACKS</span>
+            <PackageCheck size={18} style={{ color: 'var(--state-teal)' }} />
+          </div>
+          <span style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--state-teal-text)' }}>42</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Packs Processed Today</span>
         </div>
       </div>
 
@@ -148,7 +223,7 @@ export const AnalyticsPage = () => {
         </div>
       )}
 
-      {/* 2. Filter Controls Bar */}
+      {/* Filter Controls Bar */}
       <div className="analytics-filter-bar ot-card">
         <div className="filter-item-col">
           <span className="filter-item-label font-mono">DATE RANGE</span>
@@ -171,7 +246,7 @@ export const AnalyticsPage = () => {
             onChange={(e) => setTheatreFilter(e.target.value)}
             className="filter-select-input font-mono"
           >
-            <option value="All Theatres">All Operating Theatres (4)</option>
+            <option value="All Theatres">All Operating Theatres (12)</option>
             <option value="OT-01">OT-01 (Orthopedics)</option>
             <option value="OT-02">OT-02 (General & Lap)</option>
             <option value="OT-03">OT-03 (Sports Med)</option>
@@ -209,10 +284,10 @@ export const AnalyticsPage = () => {
         </div>
       </div>
 
-      {/* 3. Visually Prominent ACTIONABLE INSIGHTS Section */}
+      {/* Actionable Insights Section */}
       <ActionableInsights />
 
-      {/* 4. Analytics Grid: 6 Core Sections */}
+      {/* Analytics Grid: 6 Core Sections */}
       <div className="analytics-modules-grid">
         {/* Section 1: OT Utilization */}
         <div className="analytics-card ot-card">
@@ -242,7 +317,6 @@ export const AnalyticsPage = () => {
                     className={`util-fill ${ot.utilization >= 85 ? 'fill-teal' : ot.utilization >= 78 ? 'fill-blue' : 'fill-amber'}`}
                     style={{ width: `${ot.utilization}%` }}
                   />
-                  {/* Benchmark Target Line */}
                   <div className="util-benchmark-line" style={{ left: '80%' }} title="Target 80%" />
                 </div>
               </div>
@@ -250,7 +324,7 @@ export const AnalyticsPage = () => {
           </div>
 
           <div className="util-summary-footer font-mono">
-            <span>Hospital Average OT Utilization: <strong>84.3%</strong> (+4.3% above target)</span>
+            <span>Hospital Average OT Utilization: <strong>82%</strong> (+8.4% above target)</span>
           </div>
         </div>
 
@@ -266,7 +340,6 @@ export const AnalyticsPage = () => {
 
           <p className="card-intro-text">Root-cause distribution of surgical start delays and room turnover latency.</p>
 
-          {/* Composite Distribution Bar */}
           <div className="composite-delay-bar">
             {delayCauses.map((dc) => (
               <div
@@ -278,7 +351,6 @@ export const AnalyticsPage = () => {
             ))}
           </div>
 
-          {/* Causes List */}
           <div className="delay-causes-legend-list font-mono">
             {delayCauses.map((dc) => (
               <div key={dc.name} className="delay-cause-row">
@@ -307,20 +379,16 @@ export const AnalyticsPage = () => {
 
           <p className="card-intro-text">Average OT turnover duration over time (patient out to next patient in room).</p>
 
-          {/* 7-Day Trend Visualizer */}
           <div className="turnaround-trend-container">
             <div className="turnaround-chart-svg-wrapper">
               <svg viewBox="0 0 360 120" className="turnaround-svg" preserveAspectRatio="none">
-                {/* Benchmark line at 25m (y = 50) */}
                 <line x1="0" y1="50" x2="360" y2="50" stroke="#94a3b8" strokeDasharray="3 3" strokeWidth="1" />
-                {/* SVG Polyline trend */}
                 <polyline
                   fill="none"
                   stroke="#0d9488"
                   strokeWidth="2.5"
                   points="20,65 73,55 126,30 180,70 233,75 286,80 340,70"
                 />
-                {/* Dots */}
                 {[
                   { cx: 20, cy: 65, val: '22m' },
                   { cx: 73, cy: 55, val: '24m' },
@@ -350,7 +418,7 @@ export const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Section 4: Procedure Duration (Scheduled vs Actual) */}
+        {/* Section 4: Procedure Duration */}
         <div className="analytics-card ot-card">
           <div className="analytics-card-header">
             <div className="card-header-left">
@@ -390,7 +458,7 @@ export const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Section 5: Workflow Bottlenecks (Ranked Causes) */}
+        {/* Section 5: Workflow Bottlenecks */}
         <div className="analytics-card ot-card">
           <div className="analytics-card-header">
             <div className="card-header-left">
@@ -427,7 +495,7 @@ export const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* Section 6: Department Performance (Triad Metrics) */}
+        {/* Section 6: Department Performance */}
         <div className="analytics-card ot-card">
           <div className="analytics-card-header">
             <div className="card-header-left">

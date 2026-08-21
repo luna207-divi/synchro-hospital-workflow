@@ -1,0 +1,570 @@
+/* ==========================================================
+   SYNCHRO — Admin Portal / Executive Command Center
+   Premium Light Healthcare SaaS Theme
+   Matches: Landing page visual language
+   ========================================================== */
+
+/* ── Container ─────────────────────────────────────────────── */
+.admin-portal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 32px;
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── 1. Hero Header Card ──────────────────────────────────── */
+.admin-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 60%, #e0f2fe 100%);
+  border: 1px solid var(--border-cyan, rgba(6, 182, 212, 0.30));
+  border-radius: var(--radius-xl, 20px);
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(10, 25, 47, 0.07)),
+              0 0 0 1px rgba(6, 182, 212, 0.08);
+}
+
+.admin-title-side {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--accent-gradient, linear-gradient(135deg, #06b6d4, #2563eb));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
+}
+
+.admin-main-heading {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-navy-head, #0a192f);
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.admin-subhead {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+  margin-top: 2px;
+  display: block;
+}
+
+/* ── 2. KPI Metric Cards Grid ─────────────────────────────── */
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-kpi-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+  min-height: 120px;
+}
+
+.admin-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-cyan, rgba(6, 182, 212, 0.30));
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(10, 25, 47, 0.05)),
+              0 0 0 1px rgba(6, 182, 212, 0.08);
+}
+
+.kpi-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kpi-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kpi-value {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-navy-head, #0a192f);
+  line-height: 1.1;
+}
+
+.kpi-subtext {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* KPI accent top borders */
+.kpi-pillar-blue    { border-top: 3px solid #3b82f6; }
+.kpi-pillar-indigo  { border-top: 3px solid #6366f1; }
+.kpi-pillar-teal    { border-top: 3px solid #14b8a6; }
+.kpi-pillar-emerald { border-top: 3px solid #10b981; }
+.kpi-pillar-purple  { border-top: 3px solid #a855f7; }
+.kpi-pillar-amber   { border-top: 3px solid #f59e0b; }
+.kpi-pillar-red     { border-top: 3px solid #ef4444; }
+.kpi-pillar-cyan    { border-top: 3px solid #06b6d4; }
+
+/* KPI icon colors */
+.kpi-header-row .text-blue    { color: #3b82f6; }
+.kpi-header-row .text-indigo  { color: #6366f1; }
+.kpi-header-row .text-teal    { color: #14b8a6; }
+.kpi-header-row .text-emerald { color: #10b981; }
+.kpi-header-row .text-amber   { color: #f59e0b; }
+.kpi-header-row .text-cyan    { color: #06b6d4; }
+.kpi-header-row .text-purple  { color: #a855f7; }
+.kpi-header-row .text-red     { color: #ef4444; }
+
+/* ── 3. Tab Navigation Bar ────────────────────────────────── */
+.admin-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+  flex-wrap: wrap;
+}
+
+.admin-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.admin-nav-btn:hover {
+  color: var(--text-navy-head, #0a192f);
+  background: var(--surface-hover, #f8fafc);
+}
+
+.admin-nav-btn.is-active {
+  color: var(--status-cyan-text, #0891b2);
+  background: var(--status-cyan-bg, #ecfeff);
+  border-color: var(--status-cyan-border, #a5f3fc);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+}
+
+/* ── 4. Tab Content Panel ─────────────────────────────────── */
+.admin-tab-content {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-xl, 20px);
+  padding: 28px;
+  min-height: 480px;
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+}
+
+.tab-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-default, #e2e8f0);
+  gap: 16px;
+}
+
+.tab-heading {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-navy-head, #0a192f);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.tab-subheading {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ── Data Tables ──────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 0.8125rem);
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--surface-inset, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-default, #e2e8f0);
+}
+
+.admin-table th:first-child {
+  border-radius: var(--radius-sm, 8px) 0 0 0;
+}
+
+.admin-table th:last-child {
+  border-radius: 0 var(--radius-sm, 8px) 0 0;
+}
+
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+  color: var(--text-secondary, #334155);
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background: var(--surface-hover, #f8fafc);
+}
+
+.admin-table .font-semibold {
+  color: var(--text-navy-head, #0a192f);
+}
+
+.admin-table .text-cyan {
+  color: var(--status-cyan-text, #0891b2);
+}
+
+.admin-table .text-teal {
+  color: var(--status-green-text, #047857);
+}
+
+.admin-table .text-muted {
+  color: var(--text-muted, #64748b);
+}
+
+/* ── Rooms & Beds Occupancy Grid ──────────────────────────── */
+.occupancy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.occupancy-room-card {
+  padding: 20px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+}
+
+.beds-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.bed-chip {
+  padding: 12px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--border-default, #e2e8f0);
+  background: var(--surface-hover, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bed-chip.is-occupied {
+  border-color: var(--status-cyan-border, #a5f3fc);
+  background: var(--status-cyan-bg, #ecfeff);
+}
+
+.bed-chip.is-available {
+  border-color: var(--status-green-border, #a7f3d0);
+  background: var(--status-green-bg, #ecfdf5);
+}
+
+.bed-chip .font-mono {
+  color: var(--text-navy-head, #0a192f);
+}
+
+/* ── Report Generator Box ─────────────────────────────────── */
+.report-generator-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface-inset, #f1f5f9);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  margin-bottom: 24px;
+}
+
+.report-generator-box .form-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.report-generator-box .form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-card, #ffffff);
+  font-size: var(--text-sm, 0.8125rem);
+  color: var(--text-primary, #0f172a);
+}
+
+/* ── Overview Analytics Cards Grid ────────────────────────── */
+.admin-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.admin-analytics-card {
+  padding: 24px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+}
+
+.admin-analytics-card h3 {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: var(--text-md, 0.9375rem);
+  font-weight: 700;
+  color: var(--text-navy-head, #0a192f);
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-analytics-card h3 svg {
+  color: var(--status-cyan-text, #0891b2);
+}
+
+.analytics-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+  font-size: var(--text-sm, 0.8125rem);
+}
+
+.analytics-stat-row:last-child {
+  border-bottom: none;
+}
+
+.analytics-stat-label {
+  color: var(--text-secondary, #334155);
+}
+
+.analytics-stat-value {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 700;
+  color: var(--text-navy-head, #0a192f);
+}
+
+/* ── Department Telemetry Card ────────────────────────────── */
+.dept-telemetry-card {
+  padding: 24px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+}
+
+.dept-telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+  font-size: var(--text-sm, 0.8125rem);
+}
+
+.dept-telemetry-row:last-child {
+  border-bottom: none;
+}
+
+.dept-telemetry-name {
+  color: var(--text-secondary, #334155);
+  font-weight: 500;
+}
+
+/* ── Workflow Events Table ────────────────────────────────── */
+.admin-events-card {
+  padding: 24px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-xs, 0 1px 3px rgba(10, 25, 47, 0.04));
+  overflow: hidden;
+}
+
+.admin-events-card h3 {
+  font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+  font-size: var(--text-md, 0.9375rem);
+  font-weight: 700;
+  color: var(--text-navy-head, #0a192f);
+  margin: 0 0 16px 0;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.events-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--surface-inset, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-default, #e2e8f0);
+}
+
+.events-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border-subtle, #f1f5f9);
+  color: var(--text-secondary, #334155);
+  vertical-align: middle;
+}
+
+.events-table tr:hover td {
+  background: var(--surface-hover, #f8fafc);
+}
+
+/* ── Status Pills ─────────────────────────────────────────── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill.is-normal {
+  background: var(--status-green-bg, #ecfdf5);
+  color: var(--status-green-text, #047857);
+  border: 1px solid var(--status-green-border, #a7f3d0);
+}
+
+.status-pill.is-attention {
+  background: var(--status-amber-bg, #fffbeb);
+  color: var(--status-amber-text, #b45309);
+  border: 1px solid var(--status-amber-border, #fde68a);
+}
+
+.status-pill.is-critical {
+  background: var(--status-red-bg, #fff1f2);
+  color: var(--status-red-text, #be123c);
+  border: 1px solid var(--status-red-border, #fecdd3);
+}
+
+.status-pill.is-active {
+  background: var(--status-cyan-bg, #ecfeff);
+  color: var(--status-cyan-text, #0891b2);
+  border: 1px solid var(--status-cyan-border, #a5f3fc);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.green  { background: var(--status-green, #10b981); }
+.status-dot.amber  { background: var(--status-amber, #f59e0b); }
+.status-dot.red    { background: var(--status-red, #f43f5e); }
+.status-dot.cyan   { background: var(--status-cyan, #06b6d4); }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .admin-portal-container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .admin-hero-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .admin-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-tabs-nav {
+    gap: 2px;
+  }
+
+  .admin-tab-content {
+    padding: 20px;
+  }
+}

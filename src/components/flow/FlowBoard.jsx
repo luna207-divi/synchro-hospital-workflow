@@ -2,313 +2,158 @@ import React, { useEffect } from 'react';
 import { 
   User, Zap, Package, Clock, AlertTriangle, CheckCircle2, 
   XCircle, Stethoscope, Timer, Loader, Activity, ShieldCheck,
-  Building2, ArrowUpRight, Sparkles, RefreshCw
+  Building2, ArrowUpRight, Sparkles, RefreshCw, Heart, FileText, Bed
 } from 'lucide-react';
 import { CountUp } from '../common/CountUp';
+import { useWorkflow } from '../../context/WorkflowContext';
 import './FlowBoard.css';
 
 /* ============================================================
-   SYNCHRO — FLOW BOARD (Sophisticated Animation System)
-   - Soft scale & card hover elevation
-   - Floating hero 3D graphics & tags
-   - Moving workflow SVG dash paths
-   - Soft cyan glowing active stage nodes
-   - Non-aggressive red pulse for blocked states
-   - Smooth animated number counting (CountUp)
-   - Progress bar fill animations
-   - Scroll-triggered reveals
+   SYNCHRO — FLOW BOARD
+   8-Stage Connected Hospital Workflow Command Board:
+   ADMISSION → NURSING → DOCTOR → OT READINESS → CSSD → OPERATING THEATRE → RECOVERY → BILLING / DISCHARGE
    ============================================================ */
 
-const STAGES = [
-  { id: 'patient',     label: 'Patient Ready',  icon: User },
-  { id: 'preparing',   label: 'Preparing',      icon: Zap },
-  { id: 'instruments', label: 'Instruments',     icon: Package },
-  { id: 'surgery',     label: 'In Surgery',      icon: Stethoscope },
-  { id: 'turnover',    label: 'Turnover',        icon: Timer },
-  { id: 'ready',       label: 'OT Ready',        icon: CheckCircle2 },
+const WORKFLOW_STAGES = [
+  { id: 'ADMISSION', label: 'Admission', icon: User, desc: 'Intake & Registration' },
+  { id: 'NURSING', label: 'Nursing', icon: Activity, desc: 'Triage & Vitals' },
+  { id: 'DOCTOR', label: 'Doctor Review', icon: Heart, desc: 'Consultation & Pre-Op' },
+  { id: 'OT_READINESS', label: 'OT Readiness', icon: ClipboardCheckIcon, desc: 'Gate Check Clearance' },
+  { id: 'CSSD', label: 'CSSD', icon: Package, desc: 'Sterile Pack Verified' },
+  { id: 'OT', label: 'Operating Theatre', icon: Stethoscope, desc: 'Active Procedure' },
+  { id: 'RECOVERY', label: 'Recovery', icon: Timer, desc: 'PACU Monitoring' },
+  { id: 'DISCHARGE', label: 'Billing / Discharge', icon: ShieldCheck, desc: 'Financial Clearance' }
 ];
 
-const OT_DATA = [
-  {
-    id: 'OT-01',
-    currentStage: 3,
-    flowStatus: 'cyan',
-    statusLabel: 'In Surgery',
-    patient: 'R. Vance',
-    procedure: 'Total Hip Arthroplasty',
-    surgeon: 'Dr. A. Miller',
-    elapsed: '1h 45m',
-    expected: '~55m remaining',
-    delay: null,
-  },
-  {
-    id: 'OT-02',
-    currentStage: 1,
-    flowStatus: 'red',
-    statusLabel: 'Blocked',
-    patient: 'E. Rostova',
-    procedure: 'Lap Cholecystectomy',
-    surgeon: 'Dr. K. Patel',
-    elapsed: '25m waiting',
-    expected: 'Blocked',
-    delay: 'CSSD pack in autoclave cooldown',
-    blockBetween: [1, 2],
-  },
-  {
-    id: 'OT-03',
-    currentStage: 4,
-    flowStatus: 'amber',
-    statusLabel: 'Turnover — Over Time',
-    patient: 'M. Chen',
-    procedure: 'ACL Reconstruction',
-    surgeon: 'Dr. J. Gomez',
-    elapsed: '34m turnover',
-    expected: 'Benchmark: 25m',
-    delay: '+9m over expected turnover',
-  },
-  {
-    id: 'OT-04',
-    currentStage: 5,
-    flowStatus: 'green',
-    statusLabel: 'Ready',
-    patient: null,
-    procedure: null,
-    surgeon: null,
-    elapsed: null,
-    expected: 'Next: S. Jenkins 11:30',
-    delay: null,
-  },
-];
-
-const ATTENTION_ITEMS = [
-  {
-    id: 'ATT-1',
-    what: 'OT-02 surgery cannot start',
-    why: 'CSSD instrument pack stuck in Autoclave #2 cooldown — estimated 18 min remaining',
-    who: 'CSSD Team',
-    severity: 'red',
-    time: '25 min blocked',
-  },
-  {
-    id: 'ATT-2',
-    what: 'OT-03 turnover exceeding benchmark',
-    why: 'Biohazard cleanup protocol required post-ACL procedure. Sanitation team dispatched.',
-    who: 'Cleaning Supervisor',
-    severity: 'amber',
-    time: '+9 min over',
-  },
-  {
-    id: 'ATT-3',
-    what: 'Patient consent missing for 14:00 case',
-    why: 'A. Miller — Lap Chole consent form pending signature in EMR.',
-    who: 'Admissions',
-    severity: 'amber',
-    time: '3h until case',
-  },
-];
-
-const UPCOMING_CASES = [
-  {
-    id: 'UP-1',
-    time: '11:30',
-    patient: 'S. Jenkins',
-    procedure: 'Total Knee Arthroplasty • Dr. R. Sharma',
-    ot: 'OT-04',
-    readiness: 'green',
-    readinessLabel: 'All gates clear',
-  },
-  {
-    id: 'UP-2',
-    time: '14:00',
-    patient: 'A. Miller',
-    procedure: 'Lap Cholecystectomy • Dr. K. Patel',
-    ot: 'OT-02',
-    readiness: 'amber',
-    readinessLabel: 'Consent pending',
-  },
-  {
-    id: 'UP-3',
-    time: '15:30',
-    patient: 'A. Malik',
-    procedure: 'Meniscus Repair • Dr. J. Gomez',
-    ot: 'OT-03',
-    readiness: 'green',
-    readinessLabel: 'All gates clear',
-  },
-];
-
-const StageNode = ({ stage, index, currentStage, flowStatus, blockBetween }) => {
-  const isCompleted = index < currentStage;
-  const isCurrent = index === currentStage;
-  const isBlocked = blockBetween && index === blockBetween[1];
-  const isBlockedBefore = blockBetween && index === blockBetween[0];
-  const Icon = stage.icon;
-
-  let nodeClass = 'stage-upcoming';
-  if (isCompleted) nodeClass = 'stage-done';
-  if (isCurrent) nodeClass = `stage-current-${flowStatus}`;
-  if (isBlocked) nodeClass = 'stage-blocked';
-
-  return (
-    <div className={`stage-node-wrapper ${isCurrent ? 'is-current' : ''}`}>
-      {index > 0 && (
-        isBlocked ? (
-          <div className="connector-break">
-            <span className="connector-break-icon">
-              <XCircle size={14} />
-            </span>
-          </div>
-        ) : (
-          <svg className="stage-connector-svg" viewBox="0 0 44 6">
-            <line 
-              x1="0" 
-              y1="3" 
-              x2="44" 
-              y2="3" 
-              className={
-                isCompleted 
-                  ? 'connector-line-done' 
-                  : isCurrent 
-                  ? 'connector-line-active' 
-                  : 'connector-line-future'
-              } 
-            />
-          </svg>
-        )
-      )}
-      
-      <div className={`stage-node ${nodeClass}`} title={stage.label}>
-        {isCompleted ? (
-          <CheckCircle2 size={16} />
-        ) : (
-          <Icon size={16} />
-        )}
-      </div>
-      
-      {isCurrent && (
-        <span className={`stage-current-label stage-label-${flowStatus}`}>
-          {stage.label}
-        </span>
-      )}
-    </div>
-  );
-};
-
-const OTLane = ({ ot }) => {
-  const statusColorClass = `lane-${ot.flowStatus}`;
-
-  return (
-    <div className={`ot-lane ${statusColorClass} scroll-reveal`}>
-      <div className="ot-lane-id">
-        <span className="ot-id-text">{ot.id}</span>
-      </div>
-
-      <div className="ot-lane-flow">
-        {STAGES.map((stage, idx) => (
-          <StageNode
-            key={stage.id}
-            stage={stage}
-            index={idx}
-            currentStage={ot.currentStage}
-            flowStatus={ot.flowStatus}
-            blockBetween={ot.blockBetween}
-          />
-        ))}
-      </div>
-
-      <div className="ot-lane-info">
-        {ot.patient ? (
-          <>
-            <span className="lane-patient">{ot.patient}</span>
-            <span className="lane-procedure">{ot.procedure}</span>
-            <span className="lane-surgeon">{ot.surgeon}</span>
-            <div className="lane-timing">
-              {ot.elapsed && (
-                <span className="lane-elapsed">
-                  <Clock size={11} />
-                  {ot.elapsed}
-                </span>
-              )}
-              {ot.delay && (
-                <span className={`lane-delay delay-${ot.flowStatus}`}>
-                  <AlertTriangle size={11} />
-                  {ot.delay}
-                </span>
-              )}
-              {!ot.delay && ot.expected && (
-                <span className="lane-expected">{ot.expected}</span>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="lane-available">
-            <span className="lane-available-label">
-              <CheckCircle2 size={14} />
-              <span>OT Ready</span>
-            </span>
-            {ot.expected && <span className="lane-expected">{ot.expected}</span>}
-          </div>
-        )}
-      </div>
-
-      <div className={`ot-lane-status status-${ot.flowStatus}`}>
-        {ot.flowStatus === 'green' && <CheckCircle2 size={14} />}
-        {ot.flowStatus === 'amber' && <AlertTriangle size={14} />}
-        {ot.flowStatus === 'red' && <XCircle size={14} />}
-        {ot.flowStatus === 'cyan' && <Loader size={14} />}
-        <span>{ot.statusLabel}</span>
-      </div>
-    </div>
-  );
-};
-
-const AttentionCard = ({ item }) => {
-  const Icon = item.severity === 'red' ? XCircle : AlertTriangle;
-
-  return (
-    <div className={`attention-card att-${item.severity} scroll-reveal`}>
-      <div className="att-card-top">
-        <div className={`att-icon-box att-icon-${item.severity}`}>
-          <Icon size={16} />
-        </div>
-        <span className={`att-who att-who-${item.severity}`}>{item.who}</span>
-      </div>
-      <div className="att-what">{item.what}</div>
-      <div className="att-why">{item.why}</div>
-      <div className="att-time">{item.time}</div>
-    </div>
-  );
-};
-
-const UpcomingRow = ({ item, isLast }) => {
-  const ReadinessIcon = item.readiness === 'green' ? CheckCircle2 : AlertTriangle;
-
-  return (
-    <div className={`upcoming-row ${isLast ? 'is-last' : ''}`}>
-      <div className="upcoming-time">{item.time}</div>
-      <div className={`upcoming-dot upcoming-dot-${item.readiness}`}>
-        <ReadinessIcon size={14} />
-      </div>
-      <div className="upcoming-details">
-        <div className="upcoming-header">
-          <span className="upcoming-patient">{item.patient}</span>
-          <span className="upcoming-ot">{item.ot}</span>
-        </div>
-        <span className="upcoming-procedure">{item.procedure}</span>
-        <span className={`upcoming-readiness readiness-${item.readiness}`}>
-          <ReadinessIcon size={12} />
-          <span>{item.readinessLabel}</span>
-        </span>
-      </div>
-    </div>
-  );
-};
+function ClipboardCheckIcon(props) {
+  return <CheckCircle2 {...props} />;
+}
 
 export const FlowBoard = () => {
+  const workflow = useWorkflow();
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-GB', { 
     weekday: 'long', day: 'numeric', month: 'long' 
   });
+
+  const patients = workflow.patients || [];
+  const surgeries = workflow.surgeries || [];
+
+  // Group patients dynamically from shared WorkflowContext
+  const columnsData = [
+    {
+      stage: 'ADMISSION',
+      title: 'REGISTERED',
+      subtitle: 'Front Desk Intake',
+      color: 'blue',
+      items: patients.filter(p => p.admission_status === 'REGISTERED').slice(0, 5).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'General Evaluation',
+        dept: p.admissions?.[0]?.department || 'Front Desk',
+        status: 'Registered',
+        delay: null
+      }))
+    },
+    {
+      stage: 'ADMITTED',
+      title: 'ADMITTED',
+      subtitle: 'Ward Suite Inpatient',
+      color: 'teal',
+      items: patients.filter(p => p.admission_status === 'ADMITTED').slice(0, 5).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Inpatient Admission',
+        dept: p.assigned_bed?.room?.room_number ? `${p.assigned_bed.room.room_number} / ${p.assigned_bed.bed_number}` : 'Ward R-103',
+        status: 'Admitted',
+        delay: null
+      }))
+    },
+    {
+      stage: 'NURSING',
+      title: 'NURSING',
+      subtitle: 'Triage & Pre-Op Prep',
+      color: 'teal',
+      items: patients.filter(p => p.admission_status === 'PRE_OP' || p.vitals).slice(0, 5).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Pre-Op Vitals & IV Prep',
+        dept: 'Nursing Ward Bay',
+        status: p.admission_status === 'PRE_OP' ? 'Pre-Op Bay' : 'Vitals Recorded',
+        delay: null
+      }))
+    },
+    {
+      stage: 'DOCTOR',
+      title: 'CONSULTATION',
+      subtitle: 'Pre-Op Doctor Clearance',
+      color: 'indigo',
+      items: patients.filter(p => p.assigned_doctor && p.admission_status !== 'DISCHARGED' && p.admission_status !== 'IN_SURGERY').slice(0, 4).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Doctor Assessment',
+        dept: p.assigned_doctor,
+        status: 'Doctor Review',
+        delay: null
+      }))
+    },
+    {
+      stage: 'OT_READINESS',
+      title: 'READY FOR OT',
+      subtitle: 'Pre-Flight Gate Check',
+      color: 'amber',
+      items: patients.filter(p => p.consents?.some(c => c.status === 'PENDING') || p.admission_status === 'READY_FOR_OT').slice(0, 4).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Surgical Case',
+        dept: 'OT Holding Core',
+        status: p.admission_status === 'READY_FOR_OT' ? 'Cleared 100%' : 'Consent Check',
+        delay: p.consents?.some(c => c.status === 'PENDING') ? 'Surgical consent pending' : null
+      }))
+    },
+    {
+      stage: 'CSSD',
+      title: 'CSSD STAGING',
+      subtitle: 'Sterile Pack Staging',
+      color: 'teal',
+      items: (workflow.cssd_packs || []).filter(cp => cp.status === 'STERILE' && cp.assigned_ot !== 'Unassigned').slice(0, 4).map(cp => ({
+        code: cp.pack_code,
+        name: cp.pack_type,
+        procedure: `For ${cp.assigned_ot}`,
+        dept: cp.location,
+        status: 'Pack Sterile',
+        delay: null
+      }))
+    },
+    {
+      stage: 'OPERATING THEATRE',
+      title: 'IN OT',
+      subtitle: 'Active Procedure',
+      color: 'cyan',
+      items: patients.filter(p => p.admission_status === 'IN_SURGERY' || p.admission_status === 'TRANSFERRED_TO_OT').slice(0, 5).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Active Surgery',
+        dept: 'OT-02 Suite',
+        status: 'In Surgery',
+        delay: null
+      }))
+    },
+    {
+      stage: 'DISCHARGE',
+      title: 'RECOVERY / DISCHARGE',
+      subtitle: 'PACU & Settlement',
+      color: 'blue',
+      items: patients.filter(p => p.admission_status === 'DISCHARGED' || p.admission_status === 'RECOVERY').slice(0, 5).map(p => ({
+        code: p.patient_code,
+        name: p.full_name,
+        procedure: p.procedure || 'Post-Op Monitoring',
+        dept: p.admission_status === 'DISCHARGED' ? 'Discharge Billing' : 'PACU Recovery',
+        status: p.admission_status === 'DISCHARGED' ? 'Discharged' : 'Recovering',
+        delay: null
+      }))
+    }
+  ];
 
   // Scroll-triggered reveal observer
   useEffect(() => {
@@ -320,228 +165,149 @@ export const FlowBoard = () => {
       });
     }, { threshold: 0.1 });
 
-    const elements = document.querySelectorAll('.scroll-reveal');
-    elements.forEach(el => observer.observe(el));
-
+    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
   return (
-    <div className="flow-board">
+    <div className="flow-board" style={{ maxWidth: '100%' }}>
       {/* ── Page Header Bar ────────────────────────────── */}
       <div className="flow-board-header">
         <div className="flow-board-title-block">
-          <h1 className="flow-board-title">Hospital Operations</h1>
+          <h1 className="flow-board-title font-display">Hospital Workflow Command Board</h1>
           <p className="flow-board-subtitle">
-            Real-time surgical workflow telemetry across connected hospital departments
+            Synchronized patient movement across all 8 hospital operational departments
           </p>
         </div>
         <div className="flow-board-meta">
           <span className="flow-board-date">{dateStr}</span>
           <div className="flow-board-live">
             <span className="live-dot" />
-            <span className="live-label">Live Sync</span>
+            <span className="live-label">Live Flow Telemetry</span>
           </div>
         </div>
       </div>
 
-      {/* ── HERO VISUAL BANNER: Everything in the Hospital is Connected ── */}
-      <div className="hero-triad-banner">
-        <div className="hero-banner-content">
-          <div className="hero-banner-badge">
-            <Sparkles size={14} />
-            <span>Workflow Correlation Engine</span>
-          </div>
-          <h2 className="hero-banner-heading">
-            Everything in the hospital is connected.
-          </h2>
-          <p className="hero-banner-desc">
-            Synchro continuously correlates patient pre-op intake, surgical room prep, and CSSD sterile pack readiness to prevent delays before incision.
-          </p>
-
-          {/* Animated Progress Bar Fill */}
-          <div className="hero-progress-section">
-            <div className="hero-progress-label font-mono text-2xs text-muted">
-              <span>Overall Hospital Sync Index</span>
-              <CountUp end={94.8} decimals={1} suffix="%" />
-            </div>
-            <div className="progress-bar-animated" style={{ '--progress-val': '94.8%' }} />
-          </div>
-
-          <div className="hero-nodes-grid">
-            <div className="triad-node-card">
-              <div className="node-icon-wrapper node-icon-blue">
-                <User size={18} />
-              </div>
-              <div className="node-info">
-                <span className="node-title">Admissions</span>
-                <span className="node-status text-green">
-                  <CountUp end={96.2} decimals={1} suffix="% Ready" />
-                </span>
-              </div>
-            </div>
-
-            <div className="triad-node-card">
-              <div className="node-icon-wrapper node-icon-purple">
-                <Stethoscope size={18} />
-              </div>
-              <div className="node-info">
-                <span className="node-title">Operating Suites</span>
-                <span className="node-status text-cyan">
-                  <CountUp end={4} suffix=" Active Suites" />
-                </span>
-              </div>
-            </div>
-
-            <div className="triad-node-card">
-              <div className="node-icon-wrapper node-icon-teal">
-                <Package size={18} />
-              </div>
-              <div className="node-info">
-                <span className="node-title">CSSD Sterilization</span>
-                <span className="node-status text-amber">1 Tray Cooldown</span>
-              </div>
-            </div>
-          </div>
+      {/* ── 8-Stage Workflow Progression Header Bar ──────────────────── */}
+      <div className="ot-card" style={{ padding: '16px 20px', marginBottom: '20px', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          {WORKFLOW_STAGES.map((stg, idx) => {
+            const Icon = stg.icon;
+            return (
+              <React.Fragment key={stg.id}>
+                {idx > 0 && <span style={{ color: 'var(--text-dim)', fontWeight: 700 }}>→</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: idx === 5 ? 'var(--status-cyan-bg)' : '#f1f5f9',
+                    color: idx === 5 ? 'var(--status-cyan-text)' : 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Icon size={16} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-navy-head)' }}>{stg.label}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{stg.desc}</span>
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="hero-graphic-wrapper">
-          <span className="hero-floating-tag tag-top-left">
-            <Activity size={12} />
-            <span>Triad Telemetry Live</span>
-          </span>
-          <img 
-            src="/assets/images/hospital_triad.png" 
-            alt="Connected Hospital Triad" 
-            className="hero-3d-graphic"
-          />
-          <span className="hero-floating-tag tag-bottom-right">
-            <CheckCircle2 size={12} />
-            <span>In Sync</span>
+      {/* ── Live Hospital-Wide Activity Audit Feed ─────────────────── */}
+      <div className="ot-card" style={{ padding: '16px 20px', marginBottom: '24px', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={16} style={{ color: 'var(--status-cyan-text)' }} />
+            <h3 style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-navy-head)', margin: 0 }}>
+              Live Hospital Movement & Audit Feed
+            </h3>
+          </div>
+          <span style={{ fontSize: '10px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--primary-blue)', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }}>
+            REAL-TIME PIPELINE TELEMETRY
           </span>
         </div>
-      </div>
 
-      {/* ── 3D VISUAL CARDS SHOWCASE GRID ─────────────────── */}
-      <div className="visual-cards-grid">
-        <div className="dept-visual-card scroll-reveal">
-          <div className="card-graphic-container">
-            <img 
-              src="/assets/images/patient_journey.png" 
-              alt="Patient Readiness Journey" 
-              className="card-3d-image"
-            />
-          </div>
-          <div className="card-body-content">
-            <span className="card-dept-badge">Intake & Pre-Op</span>
-            <h3 className="card-dept-title">Patient Readiness Journey</h3>
-            <span className="card-dept-metric">
-              <CountUp end={100} suffix="% Pre-Op Cleared for 11:30 Case" />
-            </span>
-          </div>
-        </div>
-
-        <div className="dept-visual-card scroll-reveal">
-          <div className="card-graphic-container">
-            <img 
-              src="/assets/images/operating_theatre.png" 
-              alt="OT Suite Telemetry" 
-              className="card-3d-image"
-            />
-          </div>
-          <div className="card-body-content">
-            <span className="card-dept-badge">Operating Theatres</span>
-            <h3 className="card-dept-title">OT Suite Utilization</h3>
-            <span className="card-dept-metric">
-              OT-01 In Surgery • <CountUp end={89.2} decimals={1} suffix="% Utilization" />
-            </span>
-          </div>
-        </div>
-
-        <div className="dept-visual-card scroll-reveal">
-          <div className="card-graphic-container">
-            <img 
-              src="/assets/images/sterile_tray.png" 
-              alt="CSSD Sterile Instrument Lifecycle" 
-              className="card-3d-image"
-            />
-          </div>
-          <div className="card-body-content">
-            <span className="card-dept-badge">CSSD Sterilization</span>
-            <h3 className="card-dept-title">Sterile Pack Lifecycle</h3>
-            <span className="card-dept-metric">Tray #00142 in Autoclave Cooldown</span>
-          </div>
+        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {(workflow.timelineEvents || []).slice(0, 6).map(evt => (
+            <div key={evt.id} style={{
+              minWidth: '240px',
+              maxWidth: '280px',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--primary-blue)' }}>{evt.timestamp}</span>
+                <span style={{ fontSize: '9.5px', fontWeight: 700, color: 'var(--text-muted)' }}>{evt.actor}</span>
+              </div>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-navy-head)' }}>{evt.patientName} ({evt.patientCode})</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>{evt.desc}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Section 1: Right Now (OT Lanes Flow) ────────── */}
-      <section className="flow-section">
-        <div className="section-header">
-          <h2 className="section-title">Right Now</h2>
-          <span className="section-count">4 Operating Suites Active</span>
-        </div>
+      {/* ── 8 Column Horizontal Flow Grid ───────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '14px', alignItems: 'start' }}>
+        {columnsData.map((col) => (
+          <div key={col.stage} className="ot-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '480px', backgroundColor: '#ffffff' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-navy-head)' }}>{col.title}</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{col.subtitle} • ({col.items.length})</span>
+            </div>
 
-        <div className="flow-legend">
-          <div className="flow-legend-item">
-            <span className="flow-legend-dot dot-done" />
-            <span>Completed</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {col.items.map((item) => (
+                <div 
+                  key={item.code} 
+                  style={{
+                    padding: '10px',
+                    borderRadius: '8px',
+                    backgroundColor: item.delay ? '#fff1f2' : '#f8fafc',
+                    border: item.delay ? '1px solid var(--state-red-border)' : '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    boxShadow: 'var(--shadow-xs)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--primary-blue)' }}>{item.code}</span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1' }}>{item.status}</span>
+                  </div>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-navy-head)' }}>{item.name}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{item.procedure}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{item.dept}</span>
+                  
+                  {item.delay && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontSize: '10.5px', color: 'var(--state-red-text)', fontWeight: 600 }}>
+                      <AlertTriangle size={12} />
+                      <span>{item.delay}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {col.items.length === 0 && (
+                <div style={{ padding: '20px 8px', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  No active cases in this stage
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flow-legend-item">
-            <span className="flow-legend-dot dot-active" />
-            <span>In Progress</span>
-          </div>
-          <div className="flow-legend-item">
-            <span className="flow-legend-dot dot-warn" />
-            <span>Warning</span>
-          </div>
-          <div className="flow-legend-item">
-            <span className="flow-legend-dot dot-block" />
-            <span>Blocked</span>
-          </div>
-          <div className="flow-legend-item">
-            <span className="flow-legend-dot dot-future" />
-            <span>Upcoming</span>
-          </div>
-        </div>
-
-        <div className="ot-lanes-container">
-          {OT_DATA.map(ot => (
-            <OTLane key={ot.id} ot={ot} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── Section 2: Needs Attention ──────────────────── */}
-      <section className="flow-section">
-        <div className="section-header">
-          <h2 className="section-title">Needs Attention</h2>
-          <span className="section-count">{ATTENTION_ITEMS.length} Active Bottlenecks</span>
-        </div>
-
-        <div className="attention-list">
-          {ATTENTION_ITEMS.map(item => (
-            <AttentionCard key={item.id} item={item} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── Section 3: Coming Up ────────────────────────── */}
-      <section className="flow-section">
-        <div className="section-header">
-          <h2 className="section-title">Coming Up</h2>
-          <span className="section-count">Next 3 Procedures</span>
-        </div>
-
-        <div className="upcoming-timeline">
-          {UPCOMING_CASES.map((item, idx) => (
-            <UpcomingRow 
-              key={item.id} 
-              item={item} 
-              isLast={idx === UPCOMING_CASES.length - 1}
-            />
-          ))}
-        </div>
-      </section>
+        ))}
+      </div>
     </div>
   );
 };

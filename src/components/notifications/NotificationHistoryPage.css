@@ -1,0 +1,206 @@
+/* Notification History Page Styling */
+.notif-history-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.history-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: var(--bg-surface-elevated, #1e293b);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-lg, 12px);
+}
+
+.history-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.history-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+}
+
+.history-main-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.history-subhead {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.history-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--bg-surface-card, #0f172a);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-md, 8px);
+  flex-wrap: wrap;
+}
+
+.filter-tabs-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-tab-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-tab-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.history-tab-btn.is-active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.history-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-card-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: var(--bg-surface-elevated, #1e293b);
+  border: 1px solid var(--border-default, #334155);
+  border-radius: var(--radius-md, 8px);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.history-card-item.is-unread {
+  border-left: 4px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.03);
+}
+
+.history-card-item.is-critical {
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.history-card-item.is-acknowledged {
+  opacity: 0.85;
+  border-left: 4px solid #10b981;
+}
+
+.history-card-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+}
+
+.notif-priority-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.indicator-critical { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+.indicator-high { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+.indicator-medium { background: #14b8a6; }
+.indicator-low { background: #64748b; }
+
+.history-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-item-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.history-item-desc {
+  font-size: 0.825rem;
+  color: var(--text-secondary, #cbd5e1);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 4px;
+}
+
+.history-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.empty-history-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  background: var(--bg-surface-elevated, #1e293b);
+  border: 1px border-dashed var(--border-default, #334155);
+  border-radius: var(--radius-lg, 12px);
+  text-align: center;
+}

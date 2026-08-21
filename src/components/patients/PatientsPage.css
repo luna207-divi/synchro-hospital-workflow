@@ -1,0 +1,207 @@
+.patients-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.patients-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.patients-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.patients-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-navy-head);
+  letter-spacing: -0.02em;
+}
+
+.patients-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.patients-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.patient-kpi-card {
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-info-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.kpi-title-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.kpi-val-num {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-navy-head);
+}
+
+.kpi-sub-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.kpi-icon-pill {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-icon-pill.pill-blue { background-color: rgba(37, 99, 235, 0.1); color: var(--primary-blue); }
+.kpi-icon-pill.pill-teal { background-color: rgba(13, 148, 136, 0.1); color: var(--state-teal); }
+.kpi-icon-pill.pill-amber { background-color: rgba(217, 119, 6, 0.1); color: var(--state-amber); }
+.kpi-icon-pill.pill-cyan { background-color: rgba(6, 182, 212, 0.1); color: var(--status-cyan-text); }
+
+.patients-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.status-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tab-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.tab-btn.is-active {
+  background-color: var(--status-cyan-bg);
+  border-color: var(--status-cyan-border);
+  color: var(--status-cyan-text);
+  font-weight: 700;
+}
+
+.patients-search-input-box {
+  width: 320px;
+}
+
+.patients-table-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.patients-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.patients-table th {
+  padding: var(--space-3) var(--space-4);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.patients-table td {
+  padding: var(--space-3-5) var(--space-4);
+  font-size: 12.5px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.patient-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.patient-row:hover {
+  background-color: #f8fafc;
+}
+
+.patient-code-cell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.patient-name-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-name-text {
+  font-weight: 700;
+  color: var(--text-navy-head);
+}
+
+.patient-condition-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-badge-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.status-chip-admitted { background-color: var(--state-teal-light); color: var(--state-teal-text); border: 1px solid var(--state-teal-border); }
+.status-chip-pre_op { background-color: var(--state-amber-light); color: var(--state-amber-text); border: 1px solid var(--state-amber-border); }
+.status-chip-in_surgery { background-color: var(--status-cyan-bg); color: var(--status-cyan-text); border: 1px solid var(--status-cyan-border); }
+.status-chip-discharged { background-color: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+.status-chip-emergency { background-color: var(--state-red-light); color: var(--state-red-text); border: 1px solid var(--state-red-border); }
+.status-chip-registered { background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
