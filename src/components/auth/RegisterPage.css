@@ -1,0 +1,167 @@
+/* ============================================================
+   SYNCHRO — New Member Registration Styling
+   Matches SYNCHRO design tokens, glassmorphism panel & typography
+   ============================================================ */
+
+.synchro-register-page {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--bg-canvas, #f8fafc);
+  font-family: var(--font-sans, inter, -apple-system, sans-serif);
+  overflow-x: hidden;
+}
+
+.register-left-side {
+  flex: 0 0 420px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  color: #ffffff;
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.register-left-side::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+}
+
+.register-right-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  overflow-y: auto;
+}
+
+.register-card-panel {
+  width: 100%;
+  max-width: 680px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg, 18px);
+  border: 1px solid var(--border-default, #e2e8f0);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+  padding: 32px 36px;
+}
+
+.register-panel-header {
+  margin-bottom: 24px;
+}
+
+.register-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted, #64748b);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.register-back-link:hover {
+  color: var(--primary-blue, #2563eb);
+}
+
+.register-panel-title {
+  font-family: var(--font-display, outfit, sans-serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-navy-head, #0f172a);
+  margin: 0 0 6px 0;
+}
+
+.register-panel-sub {
+  font-size: 13px;
+  color: var(--text-secondary, #475569);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.register-form-section {
+  background: #ffffff;
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.register-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-blue, #2563eb);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.register-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .register-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.register-file-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.register-file-upload-zone:hover {
+  border-color: var(--primary-blue, #2563eb);
+  background: #f0f7ff;
+}
+
+.register-submit-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 10px;
+}
+
+/* Success Card */
+.register-success-card {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.register-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+}

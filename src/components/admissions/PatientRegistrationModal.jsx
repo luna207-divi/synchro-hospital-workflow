@@ -206,7 +206,7 @@ export const PatientRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
         firstName: formData.fullName.split(' ')[0] || 'New',
         lastName: formData.fullName.split(' ').slice(1).join(' ') || 'Patient',
         dob: formData.dob,
-        age: formData.age || 42,
+        age: formData.age || 0,
         gender: formData.gender,
         bloodGroup: formData.bloodGroup,
         phone: formData.phone,

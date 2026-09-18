@@ -73,7 +73,7 @@ export const AlertsPage = () => {
   const criticalCount = alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').length;
   const warningCount = alerts.filter(a => a.severity === 'Warning' && a.status !== 'Resolved').length;
   const infoCount = alerts.filter(a => a.severity === 'Information' && a.status !== 'Resolved').length;
-  const resolvedCount = alerts.filter(a => a.status === 'Resolved').length + 14;
+  const resolvedCount = alerts.filter(a => a.status === 'Resolved').length;
 
   const liveSelectedAlert = selectedAlert ? alerts.find(a => a.id === selectedAlert.id) || selectedAlert : null;
 
@@ -141,7 +141,7 @@ export const AlertsPage = () => {
             <span className="kpi-label font-mono">RESOLVED TODAY</span>
             <div className="kpi-val-row">
               <span className="kpi-num text-teal font-display">{resolvedCount}</span>
-              <span className="kpi-sub font-mono">Avg resolution 7.2m</span>
+              <span className="kpi-sub font-mono">Resolved exceptions</span>
             </div>
           </div>
           <CheckCircle2 size={24} className="kpi-bg-icon text-teal" />
@@ -161,45 +161,23 @@ export const AlertsPage = () => {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fff5f5', border: '1px solid #fca5a5' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span className="font-mono font-bold text-red" style={{ fontSize: '11px' }}>CSSD STERILIZATION</span>
-              <Badge variant="red" size="xs">1 Expired</Badge>
+          {alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').length > 0 ? (
+            alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').slice(0, 4).map((alt, idx) => (
+              <div key={alt.id || idx} style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fff5f5', border: '1px solid #fca5a5' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span className="font-mono font-bold text-red" style={{ fontSize: '11px' }}>{(alt.department || 'SYSTEM').toUpperCase()}</span>
+                  <Badge variant="red" size="xs">{alt.severity}</Badge>
+                </div>
+                <p className="font-sans" style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
+                  {alt.title}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <span className="font-mono" style={{ fontSize: '12px' }}>No active workflow bottlenecks detected.</span>
             </div>
-            <p className="font-sans" style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
-              CSSD-GEN-017 expired in Vault B. Backup pack CSSD-LAP-021 verified.
-            </p>
-          </div>
-
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span className="font-mono font-bold text-amber" style={{ fontSize: '11px' }}>OT TURNOVER</span>
-              <Badge variant="amber" size="xs">OT-08 Lag</Badge>
-            </div>
-            <p className="font-sans" style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
-              OT-08 turnover elapsed 28m (benchmark 25m). Sanitation tech dispatched.
-            </p>
-          </div>
-
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span className="font-mono font-bold text-blue" style={{ fontSize: '11px' }}>PRE-OP CONSENT</span>
-              <Badge variant="blue" size="xs">1 Pending</Badge>
-            </div>
-            <p className="font-sans" style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
-              Priya Sharma (P-1048) requires digital consent sign-off before OT.
-            </p>
-          </div>
-
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span className="font-mono font-bold text-teal" style={{ fontSize: '11px' }}>EMERGENCY TRAUMA</span>
-              <Badge variant="teal" size="xs">STAT Ready</Badge>
-            </div>
-            <p className="font-sans" style={{ fontSize: '12px', color: 'var(--text-primary)', margin: 0, fontWeight: 500 }}>
-              Arjun Das (P-1099) fast-tracked. Emergency Kit CSSD-TRM-009 verified.
-            </p>
-          </div>
+          )}
         </div>
       </div>
 

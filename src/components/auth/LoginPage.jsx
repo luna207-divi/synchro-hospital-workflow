@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Lock, ArrowRight, ShieldCheck, Sparkles, X, Mail, CheckCircle2, UserCheck
+  Lock, ArrowRight, ShieldCheck, Sparkles, X, Mail, CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardForRole } from '../../config/roles';
@@ -22,18 +22,7 @@ import './LoginPage.css';
        BILLING    -> /billing
        ADMIN      -> /admin
    - Password recovery modal architecture
-   - Quick-select Demo Accounts helper for reviewers
    ============================================================ */
-
-const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@synchro.health', pass: 'Admin@123', role: 'ADMIN', color: '#7c3aed' },
-  { label: 'Front Desk', email: 'frontdesk@synchro.health', pass: 'Front@123', role: 'FRONT_DESK', color: '#0284c7' },
-  { label: 'Doctor', email: 'doctor@synchro.health', pass: 'Doctor@123', role: 'DOCTOR', color: '#4f46e5' },
-  { label: 'Nurse', email: 'nurse@synchro.health', pass: 'Nurse@123', role: 'NURSE', color: '#0d9488' },
-  { label: 'CSSD', email: 'cssd@synchro.health', pass: 'CSSD@123', role: 'CSSD', color: '#059669' },
-  { label: 'OT Manager', email: 'ot@synchro.health', pass: 'OT@123', role: 'OT_MANAGER', color: '#dc2626' },
-  { label: 'Billing', email: 'billing@synchro.health', pass: 'Billing@123', role: 'BILLING', color: '#0284c7' },
-];
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -51,14 +40,8 @@ export const LoginPage = () => {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
-  // Synchronize designation dropdown selection with demo email/pass
   const handleRoleSelectChange = (roleValue) => {
     setSelectedRole(roleValue);
-    const matchedAcc = DEMO_ACCOUNTS.find(a => a.role === roleValue);
-    if (matchedAcc) {
-      setEmail(matchedAcc.email);
-      setPassword(matchedAcc.pass);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -66,32 +49,23 @@ export const LoginPage = () => {
     setError(null);
     setIsLoading(true);
     try {
-      // 1. Attempt Authentication against User Records
+      // 1. Attempt Authentication via Supabase Auth
       const res = await signIn(email, password);
-      const userRole = res?.profile?.role || res?.user?.user_metadata?.role || deriveRoleFromEmail(email);
+      // Read role directly from public.profiles or user metadata
+      const userRole = res?.profile?.role || res?.user?.user_metadata?.role || 'DOCTOR';
       const targetDashboard = getDashboardForRole(userRole);
       navigate(targetDashboard, { replace: true });
     } catch (err) {
-      setError(err.message || 'Invalid email or password. Please check your credentials.');
+      console.error('[Supabase Auth Error] Login submission failed:', {
+        message: err?.message,
+        status: err?.status,
+        code: err?.code,
+        error: err
+      });
+      setError(err.message || 'Invalid login credentials.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Helper to infer role in demo mode from email if needed
-  const deriveRoleFromEmail = (emailStr) => {
-    const lower = String(emailStr || '').toLowerCase();
-    if (lower.includes('admin')) return 'ADMIN';
-    if (lower.includes('front') || lower.includes('desk') || lower.includes('admissions') || lower.includes('jenkins')) return 'FRONT_DESK';
-    if (lower.includes('nurse') || lower.includes('nursing') || lower.includes('vance')) return 'NURSING';
-    if (lower.includes('billing') || lower.includes('finance')) return 'BILLING';
-    return 'DOCTOR';
-  };
-
-  const fillDemoAccount = (acc) => {
-    setEmail(acc.email);
-    setPassword(acc.pass || 'synchro123');
-    setError(null);
   };
 
   const handleForgotPasswordSubmit = async (e) => {
@@ -101,6 +75,7 @@ export const LoginPage = () => {
       await resetPassword(forgotEmail);
       setForgotSuccess(true);
     } catch (err) {
+      console.error('[Supabase Reset Password Error]', err);
       setForgotSuccess(true);
     } finally {
       setForgotLoading(false);
@@ -179,56 +154,6 @@ export const LoginPage = () => {
               </div>
             </div>
           )}
-
-          {/* Quick Demo Accounts Selection Helper */}
-          <div style={{
-            margin: '0 0 16px 0',
-            padding: '10px 12px',
-            borderRadius: '12px',
-            background: 'rgba(255, 255, 255, 0.65)',
-            border: '1px solid var(--border-default, #e2e8f0)',
-            backdropFilter: 'blur(6px)',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginBottom: '8px',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--text-muted, #64748b)'
-            }}>
-              <UserCheck size={13} style={{ color: 'var(--primary-blue, #2563eb)' }} />
-              <span>Quick Select Demo Role</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {DEMO_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.role}
-                  type="button"
-                  onClick={() => {
-                    fillDemoAccount(acc);
-                    setSelectedRole(acc.role);
-                  }}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: email === acc.email ? `1.5px solid ${acc.color}` : '1px solid var(--border-default, #cbd5e1)',
-                    background: email === acc.email ? `${acc.color}15` : '#fff',
-                    color: email === acc.email ? acc.color : '#334155',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {acc.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Error Message Alert */}
           {error && (
@@ -314,6 +239,32 @@ export const LoginPage = () => {
             >
               {isLoading ? 'Authenticating Role...' : 'SIGN IN TO WORKSPACE'}
             </Button>
+
+            {/* New Member Registration Link */}
+            <div style={{
+              marginTop: '16px',
+              textAlign: 'center',
+              fontSize: '13px',
+              color: 'var(--text-muted, #64748b)'
+            }}>
+              <span>New member? </span>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary-blue, #2563eb)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: 0,
+                  fontSize: '13px'
+                }}
+              >
+                Sign up
+              </button>
+            </div>
           </form>
 
           {/* Trust Badge */}

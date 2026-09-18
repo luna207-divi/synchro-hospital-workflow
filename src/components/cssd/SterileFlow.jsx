@@ -17,12 +17,12 @@ export const SterileFlow = ({ onNavigateToOTControl }) => {
   
   // 6 Inventory Metrics matching requirement
   const metrics = {
-    total: 42,
-    ready: 27,
-    inSterilization: 8,
-    inUse: 4,
-    expiredQuarantined: 3,
-    reprocessing: 5
+    total: cssdPacks.length,
+    ready: cssdPacks.filter(p => p.status === 'STERILE').length,
+    inSterilization: cssdPacks.filter(p => p.status === 'STERILIZING').length,
+    inUse: cssdPacks.filter(p => p.status === 'IN_OT' || p.status === 'ISSUED').length,
+    expiredQuarantined: cssdPacks.filter(p => p.status === 'EXPIRED' || p.status === 'QUARANTINED').length,
+    reprocessing: cssdPacks.filter(p => ['DECONTAMINATION', 'REPROCESSING', 'RETURN_PENDING'].includes(p.status)).length
   };
 
   // 8-step Lifecycle Stages
@@ -238,7 +238,7 @@ export const SterileFlow = ({ onNavigateToOTControl }) => {
       {/* 6. Inventory Pack Table List */}
       <div className="ot-card" style={{ padding: '20px', marginTop: '24px' }}>
         <h3 style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--text-navy-head)', marginBottom: '12px' }}>
-          CSSD Vault Pack Inventory (Showing 42 Active Packs)
+          CSSD Vault Pack Inventory (Showing {cssdPacks.length} Active Packs)
         </h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
           <thead>
@@ -252,7 +252,14 @@ export const SterileFlow = ({ onNavigateToOTControl }) => {
             </tr>
           </thead>
           <tbody>
-            {cssdPacks.slice(0, 15).map(p => (
+            {cssdPacks.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                  No records available yet
+                </td>
+              </tr>
+            ) : (
+              cssdPacks.slice(0, 15).map(p => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary-blue)' }}>{p.pack_code}</td>
                 <td style={{ padding: '10px', fontWeight: 600 }}>{p.pack_type}</td>
@@ -273,7 +280,7 @@ export const SterileFlow = ({ onNavigateToOTControl }) => {
                   </span>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>

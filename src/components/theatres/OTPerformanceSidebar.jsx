@@ -26,40 +26,40 @@ export const OTPerformanceSidebar = () => {
   const performanceMetrics = [
     {
       label: "Today's Utilization",
-      value: '84.2%',
-      sub: '+3.8% vs last week',
+      value: '0%',
+      sub: '0% vs benchmark',
       trendGood: true,
       icon: Percent,
       color: 'blue'
     },
     {
       label: 'Avg Surgery Duration',
-      value: '1h 52m',
-      sub: 'Benchmark: 1h 45m (+7m)',
+      value: '0h 0m',
+      sub: 'Benchmark: 0h 0m',
       trendGood: true,
       icon: Clock,
       color: 'indigo'
     },
     {
       label: 'Average Turnover',
-      value: '21.4m',
-      sub: '3.6m faster than target (25m)',
+      value: '0m',
+      sub: 'Target: 25m',
       trendGood: true,
       icon: RotateCcw,
       color: 'teal'
     },
     {
       label: 'Delayed Procedures',
-      value: '2 cases',
-      sub: 'OT-03 (CSSD lag) • OT-02 (Lab)',
-      trendGood: false,
+      value: '0 cases',
+      sub: 'No delayed cases',
+      trendGood: true,
       icon: AlertTriangle,
-      color: 'red'
+      color: 'teal'
     },
     {
       label: 'On-Time Procedures',
-      value: '16 / 18',
-      sub: '88.9% on-time start rate',
+      value: '0 / 0',
+      sub: '100% on-time start rate',
       trendGood: true,
       icon: CheckCircle2,
       color: 'teal'
@@ -67,10 +67,10 @@ export const OTPerformanceSidebar = () => {
   ];
 
   const suiteDistribution = [
-    { name: 'OT-01', status: 'In Surgery', color: 'teal', pct: 70 },
-    { name: 'OT-02', status: 'Preparation', color: 'amber', pct: 25 },
-    { name: 'OT-03', status: 'Delayed', color: 'red', pct: 10 },
-    { name: 'OT-04', status: 'Ready', color: 'blue', pct: 100 }
+    { name: 'OT-01', status: 'Available', color: 'teal', pct: 0 },
+    { name: 'OT-02', status: 'Available', color: 'teal', pct: 0 },
+    { name: 'OT-03', status: 'Available', color: 'teal', pct: 0 },
+    { name: 'OT-04', status: 'Available', color: 'teal', pct: 0 }
   ];
 
   return (
@@ -132,7 +132,7 @@ export const OTPerformanceSidebar = () => {
       <div className="perf-ai-insight">
         <Sparkles size={14} className="perf-ai-icon" />
         <div className="perf-ai-text">
-          <strong>AI Turnover Forecast:</strong> OT-04 ready for next case 12 mins ahead of schedule. Recommending early transfer for Patient #P-1027.
+          <strong>AI Turnover Forecast:</strong> Operating suites ready for scheduled case allocation.
         </div>
       </div>
     </aside>

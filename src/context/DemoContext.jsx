@@ -11,41 +11,22 @@ import React, { createContext, useContext, useState } from 'react';
 const DemoContext = createContext();
 
 export const INITIAL_DEMO_STATE = {
-  patientId: 'P-1024',
-  patientName: 'E. Rostova',
-  procedure: 'Laparoscopic Cholecystectomy',
-  surgeon: 'Dr. K. Patel',
-  assignedOT: 'OT-02',
-  patientReady: true,
-  consentVerified: true,
-  preOpCleared: true,
+  patientId: '',
+  patientName: '',
+  procedure: '',
+  surgeon: '',
+  assignedOT: '',
+  patientReady: false,
+  consentVerified: false,
+  preOpCleared: false,
   
-  // OT-02 Status: 'BLOCKED' | 'READY' | 'SURGERY'
-  ot2Status: 'BLOCKED',
-  ot2Pack: 'CSSD-00421',
-  ot2BlockReason: 'Sterile pack #CSSD-00421 stuck in Autoclave #2 cooldown (18 min remaining)',
+  // OT-02 Status: 'AVAILABLE' | 'BLOCKED' | 'READY' | 'SURGERY'
+  ot2Status: 'AVAILABLE',
+  ot2Pack: null,
+  ot2BlockReason: null,
   
   // Available valid packs in CSSD
-  availablePacks: [
-    {
-      id: 'CSSD-00428',
-      name: 'Laparoscopic Cholecystectomy Pack B',
-      status: 'STERILE',
-      location: 'CSSD Sterile Bay 2',
-      autoclave: 'Autoclave #1 Verified',
-      expiry: 'Valid (22h left)',
-      available: true
-    },
-    {
-      id: 'CSSD-00435',
-      name: 'General Abdominal Tray',
-      status: 'STERILE',
-      location: 'CSSD Sterile Bay 4',
-      autoclave: 'Autoclave #3 Verified',
-      expiry: 'Valid (36h left)',
-      available: true
-    }
-  ],
+  availablePacks: [],
 
   // Animation & Toast State
   dispatchToast: null,

@@ -1,19 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { DEMO_USERS } from '../data/seedData';
 
 /* ============================================================
    SYNCHRO — Authentication Context Provider
    
-   Manages Dual-Mode Authentication (Supabase + Local Session Persistence):
-   - Validates credentials against user records
-   - Preserves session across page reloads (via localStorage fallback)
-   - Fetches user profile including role & employee ID
-   - Handles active / inactive user status checks
-   - Supports sign-in and clean sign-out
+   Supabase Auth Integration:
+   - Authenticates using Supabase Auth signInWithPassword
+   - Fetches user profile from public.profiles matching user ID
+   - Verifies profile ID matches authenticated Auth user ID
+   - Handles new member registrations and pending verification states
+   - Listens to realtime Supabase auth state changes
    ============================================================ */
-
-const AUTH_STORAGE_KEY = 'synchro_auth_session';
 
 const AuthContext = createContext({
   user: null,
@@ -23,6 +20,7 @@ const AuthContext = createContext({
   signIn: async () => {},
   signOut: async () => {},
   signUp: async () => {},
+  registerMember: async () => {},
   resetPassword: async () => {},
   isAuthenticated: false,
 });
@@ -33,69 +31,45 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile from Supabase profiles table
+  // Fetch user profile from Supabase public.profiles table using user ID
   const fetchProfile = useCallback(async (userId) => {
+    if (!userId || !supabase) return null;
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.warn('[Synchro Auth] Profile fetch warning:', error.message);
+        console.error('[Supabase Auth Error] Profile fetch error:', error);
         return null;
       }
       return data;
     } catch (err) {
-      console.warn('[Synchro Auth] Profile fetch failed:', err);
+      console.error('[Supabase Auth Error] Profile fetch exception:', err);
       return null;
     }
   }, []);
 
-  // Initialize auth state
+  // Initialize auth state with Supabase session
   useEffect(() => {
     let mounted = true;
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const isDemoMode = !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key') || supabaseUrl.includes('placeholder');
+    // Clean up legacy custom session key if present
+    localStorage.removeItem('synchro_auth_session');
 
     const initAuth = async () => {
       try {
-        // 1. Check local session persistence first (ensures reload keeps role)
-        const savedSessionStr = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (savedSessionStr) {
-          try {
-            const savedData = JSON.parse(savedSessionStr);
-            if (savedData?.user && savedData?.profile) {
-              if (mounted) {
-                setUser(savedData.user);
-                setSession(savedData.session || { provider_token: 'local-session' });
-                setProfile(savedData.profile);
-                setLoading(false);
-              }
-              return;
-            }
-          } catch (_) {
-            localStorage.removeItem(AUTH_STORAGE_KEY);
-          }
-        }
-
-        if (isDemoMode) {
-          // No auto-login fallback when unauthenticated.
-          // User remains on /login until explicit sign-in.
-          if (mounted) {
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setLoading(false);
-          }
+        if (!supabase) {
+          if (mounted) setLoading(false);
           return;
         }
 
-        // 2. Real Supabase auth check
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('[Supabase Auth Error] getSession error:', error);
+        }
 
         if (mounted) {
           setSession(currentSession);
@@ -109,30 +83,29 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
       } catch (err) {
-        console.warn('[Synchro Auth] Init error:', err);
+        console.error('[Supabase Auth Error] Init error:', err);
         if (mounted) setLoading(false);
       }
     };
 
     initAuth();
 
-    // Realtime Supabase auth state listener
+    // Supabase auth state change listener
     let subscription = null;
-    if (!isDemoMode && supabase?.auth?.onAuthStateChange) {
+    if (supabase?.auth?.onAuthStateChange) {
       const authRes = supabase.auth.onAuthStateChange(async (event, newSession) => {
         if (!mounted) return;
 
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
-        if (event === 'SIGNED_IN' && newSession?.user) {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
           const userProfile = await fetchProfile(newSession.user.id);
           if (mounted) setProfile(userProfile);
         }
 
         if (event === 'SIGNED_OUT') {
           setProfile(null);
-          localStorage.removeItem(AUTH_STORAGE_KEY);
         }
       });
       subscription = authRes?.data?.subscription;
@@ -144,149 +117,233 @@ export const AuthProvider = ({ children }) => {
     };
   }, [fetchProfile]);
 
-  // Sign in with email/employee ID + password
-  const signIn = async (emailOrId, password) => {
-    const cleanInput = String(emailOrId || '').trim().toLowerCase();
-    const cleanPass = String(password || '').trim();
+  // Sign in using Supabase Auth
+  const signIn = async (email, password) => {
+    const rawInput = String(email || '').trim();
+    const rawPass = String(password || '');
 
-    if (!cleanInput) {
-      throw new Error('Please enter your email or employee ID.');
+    if (!rawInput || !rawPass) {
+      const err = new Error('Please enter both email and password.');
+      console.error('[Supabase Auth Error]', err);
+      throw err;
     }
 
-    // Check seed data first for instant matching & local session setup
-    const foundDemoUser = DEMO_USERS.find(
-      u => u.email.toLowerCase() === cleanInput ||
-           u.alternateEmail?.toLowerCase() === cleanInput ||
-           u.employeeId.toLowerCase() === cleanInput ||
-           u.role.toLowerCase() === cleanInput
-    );
-
-    // Validate account status & password
-    if (foundDemoUser) {
-      if (foundDemoUser.status === 'INACTIVE') {
-        throw new Error('Account is inactive. Please contact administration.');
-      }
-
-      // Check password if provided
-      if (cleanPass && cleanPass !== foundDemoUser.passwordHash && cleanPass !== 'synchro123' && cleanPass !== 'Admin@123' && cleanPass !== 'Front@123' && cleanPass !== 'Doctor@123' && cleanPass !== 'Nurse@123' && cleanPass !== 'CSSD@123' && cleanPass !== 'OT@123') {
-        throw new Error('Invalid email or password.');
-      }
-
-      const mockUser = {
-        id: foundDemoUser.id,
-        email: foundDemoUser.email,
-        user_metadata: { role: foundDemoUser.role }
-      };
-      const mockSession = { provider_token: 'local-session-token', user: mockUser };
-      const mockProfile = {
-        id: foundDemoUser.id,
-        role: foundDemoUser.role,
-        email: foundDemoUser.email,
-        display_name: foundDemoUser.name,
-        job_title: foundDemoUser.jobTitle,
-        department: foundDemoUser.department,
-        badge_color: foundDemoUser.badgeColor,
-        avatar_initials: foundDemoUser.avatarInitials,
-        employee_id: foundDemoUser.employeeId,
-        status: foundDemoUser.status
-      };
-
-      setUser(mockUser);
-      setSession(mockSession);
-      setProfile(mockProfile);
-
-      // Persist session to localStorage so refresh maintains user state
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-        user: mockUser,
-        session: mockSession,
-        profile: mockProfile,
-        loginTime: Date.now()
-      }));
-
-      return { user: mockUser, session: mockSession, profile: mockProfile };
+    if (!supabase) {
+      const err = new Error('Supabase client is not configured.');
+      console.error('[Supabase Auth Error]', err);
+      throw err;
     }
 
-    // Attempt Supabase Auth if backend configured
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const isDemoMode = !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key') || supabaseUrl.includes('placeholder');
+    let targetEmail = rawInput;
+    if (!targetEmail.includes('@')) {
+      targetEmail = `${targetEmail.toLowerCase()}@synchro.health`;
+    }
 
-    if (!isDemoMode) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailOrId,
-        password,
+    // 1. Authenticate with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: targetEmail,
+      password: rawPass,
+    });
+
+    if (authError) {
+      console.error('[Supabase Auth Error] signInWithPassword failed:', {
+        message: authError.message,
+        status: authError.status,
+        code: authError.code,
+        name: authError.name,
+        attemptedEmail: targetEmail
       });
-      if (error) throw error;
-
-      if (data?.user) {
-        const userProfile = await fetchProfile(data.user.id);
-        setProfile(userProfile);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-          user: data.user,
-          session: data.session,
-          profile: userProfile
-        }));
-      }
-      return data;
+      throw authError;
     }
 
-    // Dynamic role fallback derivation if email doesn't match predefined list
-    const deriveRole = (inputStr) => {
-      const lower = String(inputStr || '').toLowerCase();
-      if (lower.includes('admin')) return 'ADMIN';
-      if (lower.includes('front') || lower.includes('desk') || lower.includes('admissions') || lower.includes('intake')) return 'FRONT_DESK';
-      if (lower.includes('nurse') || lower.includes('nursing') || lower.includes('cssd')) return 'NURSING';
-      if (lower.includes('billing') || lower.includes('finance')) return 'BILLING';
-      return 'DOCTOR';
-    };
+    if (!authData?.user) {
+      const err = new Error('Authentication succeeded but no user returned.');
+      console.error('[Supabase Auth Error]', err);
+      throw err;
+    }
 
-    const demoRole = deriveRole(cleanInput);
-    const fallbackUser = {
-      id: `usr-${Date.now()}`,
-      email: emailOrId,
-      user_metadata: { role: demoRole }
-    };
-    const fallbackSession = { provider_token: 'demo-token', user: fallbackUser };
-    const fallbackProfile = {
-      id: fallbackUser.id,
-      role: demoRole,
-      email: emailOrId,
-      display_name: emailOrId.split('@')[0] || 'Hospital Staff',
-      job_title: `${demoRole} Staff Member`
-    };
+    // 2. Fetch user's profile from public.profiles using authenticated user's ID
+    let profileData = await fetchProfile(authData.user.id);
 
-    setUser(fallbackUser);
-    setSession(fallbackSession);
-    setProfile(fallbackProfile);
+    // Fallback if profile row is not found in public.profiles yet
+    if (!profileData) {
+      console.warn('[Supabase Auth] Profile row missing in public.profiles for ID:', authData.user.id, '- creating profile fallback.');
+      profileData = {
+        id: authData.user.id,
+        role: authData.user.user_metadata?.role || 'ADMIN',
+        email: authData.user.email,
+        display_name: authData.user.user_metadata?.display_name || authData.user.email?.split('@')[0] || 'Hospital Staff',
+        job_title: authData.user.user_metadata?.job_title || 'Staff Member',
+        is_active: true
+      };
+    }
 
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-      user: fallbackUser,
-      session: fallbackSession,
-      profile: fallbackProfile
-    }));
+    // Check account approval / verification status
+    if (profileData && profileData.is_active === false) {
+      let regStatus = 'PENDING';
+      try {
+        const { data: reg } = await supabase
+          .from('member_registrations')
+          .select('status')
+          .eq('user_id', authData.user.id)
+          .maybeSingle();
+        if (reg?.status) regStatus = reg.status;
+      } catch (_) {}
 
-    return { user: fallbackUser, session: fallbackSession, profile: fallbackProfile };
+      if (regStatus === 'REJECTED') {
+        const rejErr = new Error('Your account registration request was rejected by administration.');
+        console.error('[Supabase Auth Error] Login blocked (REJECTED):', authData.user.id);
+        throw rejErr;
+      }
+
+      const pendErr = new Error('Your account registration is pending administrator verification. Please wait for approval before logging in.');
+      console.error('[Supabase Auth Error] Login blocked (PENDING):', authData.user.id);
+      throw pendErr;
+    }
+
+    // 3. Verify that profile ID matches Supabase Auth user ID
+    if (!profileData || profileData.id !== authData.user.id) {
+      const mismatchErr = new Error('Profile ID does not match authentication user ID.');
+      console.error('[Supabase Auth Error] Profile ID mismatch:', mismatchErr, { profileId: profileData?.id, authUserId: authData.user.id });
+      throw mismatchErr;
+    }
+
+    setUser(authData.user);
+    setSession(authData.session);
+    setProfile(profileData);
+
+    return { user: authData.user, session: authData.session, profile: profileData };
   };
 
-  // Sign up (for admin user creation)
+  // New Member Registration
+  const registerMember = async (formData, idProofFile) => {
+    if (!supabase) throw new Error('Supabase client is not configured.');
+
+    // 1. Create user in Supabase Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          full_name: formData.fullName,
+          employee_id: formData.employeeId,
+          requested_role: formData.requestedRole,
+          department: formData.department,
+          status: 'PENDING'
+        }
+      }
+    });
+
+    if (signUpError) {
+      console.error('[Supabase Auth Error] Registration signUp failed:', signUpError);
+      throw signUpError;
+    }
+
+    const userId = signUpData?.user?.id;
+    if (!userId) {
+      throw new Error('User creation failed. No user ID returned.');
+    }
+
+    // 2. Upload ID proof to Supabase Storage private bucket 'id-proofs'
+    let filePath = '';
+    let fileName = '';
+    let fileSize = 0;
+
+    if (idProofFile) {
+      try {
+        const fileExt = idProofFile.name.split('.').pop();
+        fileName = idProofFile.name;
+        fileSize = idProofFile.size;
+        filePath = `${userId}/${Date.now()}_id_proof.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('id-proofs')
+          .upload(filePath, idProofFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.warn('[Supabase Storage Warning] ID Proof upload failed:', uploadError.message);
+          filePath = `id-proofs/${fileName}`;
+        }
+      } catch (err) {
+        console.warn('[Supabase Storage Exception]', err);
+        filePath = `id-proofs/${idProofFile.name}`;
+      }
+    }
+
+    // 3. Upsert profile with is_active = false
+    try {
+      await supabase.from('profiles').upsert({
+        id: userId,
+        display_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone || '',
+        job_title: `${formData.requestedRole} (Pending Verification)`,
+        role: formData.requestedRole,
+        is_active: false,
+        updated_at: new Date().toISOString()
+      });
+    } catch (pErr) {
+      console.warn('[Supabase Profile Upsert Warning]', pErr);
+    }
+
+    // 4. Save record in member_registrations
+    try {
+      const { error: regErr } = await supabase.from('member_registrations').insert({
+        user_id: userId,
+        full_name: formData.fullName,
+        dob: formData.dob || null,
+        gender: formData.gender || null,
+        phone: formData.phone || '',
+        email: formData.email,
+        employee_id: formData.employeeId,
+        date_of_joining: formData.dateOfJoining || null,
+        department: formData.department,
+        requested_role: formData.requestedRole,
+        hospital_facility: formData.hospitalFacility || 'SYNCHRO Central Hospital',
+        id_proof_type: formData.idProofType,
+        id_proof_file_path: filePath || 'pending-upload',
+        id_proof_file_name: fileName || idProofFile?.name || 'document',
+        id_proof_file_size: fileSize || 0,
+        status: 'PENDING'
+      });
+
+      if (regErr) {
+        console.warn('[Supabase Registration Insert Warning]', regErr);
+      }
+    } catch (rErr) {
+      console.warn('[Supabase Registration Insert Exception]', rErr);
+    }
+
+    return { user: signUpData.user, status: 'PENDING' };
+  };
+
+  // Sign up (for generic user creation)
   const signUp = async (email, password, metadata = {}) => {
+    if (!supabase) throw new Error('Supabase client is not configured.');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: metadata },
     });
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase Auth Error] signUp error:', error);
+      throw error;
+    }
     return data;
   };
 
   // Sign out
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (_) {
-      // Ignore offline signout error
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[Supabase Auth Error] signOut error:', err);
+      }
     }
-    localStorage.removeItem(AUTH_STORAGE_KEY);
     setUser(null);
     setSession(null);
     setProfile(null);
@@ -294,15 +351,15 @@ export const AuthProvider = ({ children }) => {
 
   // Reset password
   const resetPassword = async (email) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
-      });
-      if (error) throw error;
-    } catch (_) {
-      // Fallback demo mode reset
-      return true;
+    if (!supabase) throw new Error('Supabase client is not configured.');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    if (error) {
+      console.error('[Supabase Auth Error] resetPassword error:', error);
+      throw error;
     }
+    return true;
   };
 
   const value = {
@@ -312,6 +369,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signIn,
     signUp,
+    registerMember,
     signOut,
     resetPassword,
     isAuthenticated: !!session,

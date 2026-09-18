@@ -30,15 +30,16 @@ export const LiveFlow = () => {
     { key: 'DISCHARGE', name: 'DISCHARGE', icon: ShieldCheck, desc: 'Billing & Release' }
   ];
 
-  // Active flow patients across stages
-  const activeFlowPatients = [
-    { code: 'P-1042', name: 'Ananya Rao', stage: 'SURGERY', ot: 'OT-02', procedure: 'Laparoscopic Cholecystectomy', doctor: 'Dr. Rajesh Sharma', status: 'IN_PROGRESS' },
-    { code: 'P-1043', name: 'Rahul Mehta', stage: 'CSSD', ot: 'OT-01', procedure: 'Total Hip Arthroplasty', doctor: 'Dr. James Gomez', status: 'PACK_READY' },
-    { code: 'P-1044', name: 'Meera Nair', stage: 'PRE_OP', ot: 'OT-03', procedure: 'ACL Reconstruction', doctor: 'Dr. Kevin Patel', status: 'CLEARANCE_DONE' },
-    { code: 'P-1045', name: 'Arjun Shah', stage: 'LAB', ot: 'OT-04', procedure: 'Coronary Artery Bypass', doctor: 'Dr. Alan Vance', status: 'LABS_RUNNING' },
-    { code: 'P-1046', name: 'Elena Rostova', stage: 'TRIAGE', ot: 'OT-02', procedure: 'Cholelithiasis Followup', doctor: 'Dr. Rajesh Sharma', status: 'TRIAGE_DONE' },
-    { code: 'P-1047', name: 'Robert Vance', stage: 'RECOVERY', ot: 'OT-01', procedure: 'Hip Replacement', doctor: 'Dr. James Gomez', status: 'MONITORING' }
-  ];
+  // Active flow patients across stages derived from workflow
+  const activeFlowPatients = (workflow.patients || []).map(p => ({
+    code: p.patient_code,
+    name: p.full_name,
+    stage: p.admission_status || 'ADMITTED',
+    ot: p.assigned_ot || (p.assigned_bed?.room?.room_number) || '—',
+    procedure: p.procedure || '—',
+    doctor: p.assigned_doctor || '—',
+    status: p.admission_status || 'ACTIVE'
+  }));
 
   return (
     <div className="live-flow-container">
@@ -123,7 +124,14 @@ export const LiveFlow = () => {
             </tr>
           </thead>
           <tbody>
-            {activeFlowPatients.map((p) => (
+            {activeFlowPatients.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                  No patients available yet
+                </td>
+              </tr>
+            ) : (
+              activeFlowPatients.map((p) => (
               <tr key={p.code} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <td style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary-blue)' }}>{p.code}</td>
                 <td style={{ padding: '12px', fontWeight: 700, color: 'var(--text-navy-head)' }}>{p.name}</td>
@@ -139,7 +147,7 @@ export const LiveFlow = () => {
                   <span style={{ fontSize: '11px', color: 'var(--state-teal-text)', fontWeight: 600 }}>Syncing ✓</span>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       </div>

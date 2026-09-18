@@ -30,10 +30,10 @@ export const NewAdmissionModal = ({ isOpen, onClose, onSuccess }) => {
     admissionType: 'Surgical Admission',
     department: 'General Surgery',
     consultant: 'Dr. Rajesh Sharma, MD',
-    ward: 'Surgical Ward A',
-    room: 'Room R-104',
-    bed: 'Bed B-1',
-    reason: 'Laparoscopic Cholecystectomy Evaluation',
+    ward: '',
+    room: '',
+    bed: '',
+    reason: '',
     urgency: 'ROUTINE'
   });
 
@@ -97,7 +97,7 @@ export const NewAdmissionModal = ({ isOpen, onClose, onSuccess }) => {
                     type="text"
                     className="manual-text-input"
                     style={{ paddingLeft: '36px' }}
-                    placeholder="Search e.g. Ananya Rao or P-1042..."
+                    placeholder="Search by patient name or MRN..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
@@ -107,7 +107,12 @@ export const NewAdmissionModal = ({ isOpen, onClose, onSuccess }) => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <span className="font-mono text-muted" style={{ fontSize: '10px', fontWeight: 700 }}>MATCHING PATIENTS:</span>
-                {searchResults.map(p => (
+                {searchResults.length === 0 ? (
+                  <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                    No matching patients found
+                  </div>
+                ) : (
+                  searchResults.map(p => (
                   <div
                     key={p.id}
                     style={{
@@ -133,7 +138,7 @@ export const NewAdmissionModal = ({ isOpen, onClose, onSuccess }) => {
                       Select Patient
                     </Button>
                   </div>
-                ))}
+                )))}
               </div>
             </div>
           ) : (

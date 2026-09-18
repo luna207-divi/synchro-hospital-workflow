@@ -65,20 +65,20 @@ export const TheatresPage = () => {
         suite_code: 'OT-01',
         name: 'Orthopedics & Joint Replacement',
         specialty: 'Orthopedics',
-        status: 'IN_PROCEDURE',
-        patient: 'Meera Chen',
-        patientMRN: 'P-1044',
-        procedure: 'Total Knee Replacement',
-        surgeon: 'Dr. James Gomez, MD',
-        anesthesiologist: 'Dr. Kevin Patel, MD',
-        scheduledStart: '10:00 AM',
-        actualStart: '10:12 AM',
-        expectedDurationMins: 120,
-        elapsedMins: 74,
-        cssdPackId: 'CSSD-ORT-014',
-        cssdVerified: true,
-        readinessScore: 92,
-        utilization: 89,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        scheduledStart: null,
+        actualStart: null,
+        expectedDurationMins: 0,
+        elapsedMins: 0,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.4°C',
         humidity: '48%',
         airChanges: '22 / hr'
@@ -88,20 +88,20 @@ export const TheatresPage = () => {
         suite_code: 'OT-02',
         name: 'General & Laparoscopic Surgery',
         specialty: 'General Surgery',
-        status: 'PATIENT_READY',
-        patient: 'Ananya Rao',
-        patientMRN: 'P-1042',
-        procedure: 'Laparoscopic Cholecystectomy',
-        surgeon: 'Dr. Rajesh Sharma, MD',
-        anesthesiologist: 'Dr. Kevin Patel, MD',
-        scheduledStart: '11:00 AM',
-        actualStart: 'Pending Transfer',
-        expectedDurationMins: 90,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        scheduledStart: null,
+        actualStart: null,
+        expectedDurationMins: 0,
         elapsedMins: 0,
-        cssdPackId: 'CSSD-LAP-021',
-        cssdVerified: true,
-        readinessScore: 100,
-        utilization: 82,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.8°C',
         humidity: '46%',
         airChanges: '24 / hr'
@@ -111,17 +111,16 @@ export const TheatresPage = () => {
         suite_code: 'OT-03',
         name: 'Sports Medicine & Arthroscopy',
         specialty: 'Sports Medicine',
-        status: 'TURNOVER',
-        previousCase: 'CABG Bypass Surgery',
-        nextCase: 'Arthroscopic Rotator Cuff Repair',
-        patient: 'Rahul Shah',
-        patientMRN: 'P-1043',
-        turnoverElapsedMins: 18,
-        turnoverBenchmarkMins: 25,
-        cssdPackId: 'CSSD-CABG-003',
-        cssdVerified: true,
-        readinessScore: 85,
-        utilization: 74,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '20.1°C',
         humidity: '50%',
         airChanges: '20 / hr'
@@ -131,17 +130,16 @@ export const TheatresPage = () => {
         suite_code: 'OT-04',
         name: 'Trauma & Emergency Suite',
         specialty: 'Trauma Surgery',
-        status: 'EMERGENCY_READY',
-        patient: 'Arjun Das',
-        patientMRN: 'P-1099',
-        procedure: 'Emergency Trauma Exploratory Laparotomy',
-        surgeon: 'Dr. T. Jenkins, MD',
-        anesthesiologist: 'Dr. M. Chen, MD',
-        priority: 'EMERGENCY',
-        cssdPackId: 'CSSD-TRM-009',
-        cssdVerified: true,
-        readinessScore: 98,
-        utilization: 91,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.0°C',
         humidity: '45%',
         airChanges: '26 / hr'
@@ -151,20 +149,20 @@ export const TheatresPage = () => {
         suite_code: 'OT-05',
         name: 'ENT & Head/Neck Surgery',
         specialty: 'ENT',
-        status: 'IN_PROCEDURE',
-        patient: 'Elena Rostova',
-        patientMRN: 'P-1045',
-        procedure: 'Endoscopic Sinus Surgery',
-        surgeon: 'Dr. S. Nair, MD',
-        anesthesiologist: 'Dr. L. Zhang, MD',
-        scheduledStart: '09:30 AM',
-        actualStart: '09:40 AM',
-        expectedDurationMins: 105,
-        elapsedMins: 85,
-        cssdPackId: 'CSSD-ENT-005',
-        cssdVerified: true,
-        readinessScore: 95,
-        utilization: 78,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        scheduledStart: null,
+        actualStart: null,
+        expectedDurationMins: 0,
+        elapsedMins: 0,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '20.0°C',
         humidity: '47%',
         airChanges: '22 / hr'
@@ -174,20 +172,20 @@ export const TheatresPage = () => {
         suite_code: 'OT-06',
         name: 'Neurosurgery Core Suite',
         specialty: 'Neurosurgery',
-        status: 'IN_PROCEDURE',
-        patient: 'Viktor Vance',
-        patientMRN: 'P-1052',
-        procedure: 'Lumbar Micro-Discectomy',
-        surgeon: 'Dr. M. Roy, MD',
-        anesthesiologist: 'Dr. K. Patel, MD',
-        scheduledStart: '08:00 AM',
-        actualStart: '08:15 AM',
-        expectedDurationMins: 180,
-        elapsedMins: 160,
-        cssdPackId: 'CSSD-NEU-006',
-        cssdVerified: true,
-        readinessScore: 94,
-        utilization: 88,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        scheduledStart: null,
+        actualStart: null,
+        expectedDurationMins: 0,
+        elapsedMins: 0,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '18.8°C',
         humidity: '44%',
         airChanges: '25 / hr'
@@ -197,16 +195,16 @@ export const TheatresPage = () => {
         suite_code: 'OT-07',
         name: 'Urology & Endoscopy Suite',
         specialty: 'Urology',
-        status: 'PROCEDURE_COMPLETED',
-        patient: 'Marcus Aurel',
-        patientMRN: 'P-1064',
-        procedure: 'Ureteroscopic Lithotripsy',
-        surgeon: 'Dr. R. Kapoor, MD',
-        anesthesiologist: 'Dr. S. Chen, MD',
-        cssdPackId: 'CSSD-URO-011',
-        cssdVerified: true,
-        readinessScore: 90,
-        utilization: 80,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        anesthesiologist: null,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.5°C',
         humidity: '49%',
         airChanges: '21 / hr'
@@ -216,18 +214,15 @@ export const TheatresPage = () => {
         suite_code: 'OT-08',
         name: 'Trauma Reserve Suite B',
         specialty: 'Trauma & Emergency',
-        status: 'TURNOVER',
-        previousCase: 'Emergency Fracture Fixation',
-        nextCase: 'Open Reduction Internal Fixation',
-        patient: 'Elena Singh',
-        patientMRN: 'P-1046',
-        turnoverElapsedMins: 28,
-        turnoverBenchmarkMins: 25,
-        delayReason: 'OT turnover delay (Exceeded benchmark by 3 mins)',
-        cssdPackId: 'CSSD-TRM-010',
-        cssdVerified: true,
-        readinessScore: 78,
-        utilization: 85,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.2°C',
         humidity: '46%',
         airChanges: '23 / hr'
@@ -237,16 +232,16 @@ export const TheatresPage = () => {
         suite_code: 'OT-09',
         name: 'Pediatric Surgical Core',
         specialty: 'Pediatrics',
-        status: 'SCHEDULED',
-        patient: 'Sofia Roy',
-        patientMRN: 'P-1077',
-        procedure: 'Pediatric Herniotomy',
-        surgeon: 'Dr. E. Davis, MD',
-        scheduledStart: '01:30 PM',
-        cssdPackId: 'CSSD-PED-002',
-        cssdVerified: true,
-        readinessScore: 88,
-        utilization: 72,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        scheduledStart: null,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '21.0°C',
         humidity: '52%',
         airChanges: '20 / hr'
@@ -256,19 +251,19 @@ export const TheatresPage = () => {
         suite_code: 'OT-10',
         name: 'Ophthalmology Suite',
         specialty: 'Ophthalmology',
-        status: 'IN_PROCEDURE',
-        patient: 'Ishan Gupta',
-        patientMRN: 'P-1082',
-        procedure: 'Phacoemulsification Cataract Surgery',
-        surgeon: 'Dr. A. Verma, MD',
-        scheduledStart: '10:30 AM',
-        actualStart: '10:35 AM',
-        expectedDurationMins: 45,
-        elapsedMins: 25,
-        cssdPackId: 'CSSD-OPH-001',
-        cssdVerified: true,
-        readinessScore: 96,
-        utilization: 79,
+        status: 'AVAILABLE',
+        patient: null,
+        patientMRN: null,
+        procedure: null,
+        surgeon: 'Unassigned',
+        scheduledStart: null,
+        actualStart: null,
+        expectedDurationMins: 0,
+        elapsedMins: 0,
+        cssdPackId: null,
+        cssdVerified: false,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '20.2°C',
         humidity: '48%',
         airChanges: '22 / hr'
@@ -280,11 +275,11 @@ export const TheatresPage = () => {
         specialty: 'General Surgery',
         status: 'AVAILABLE',
         patient: null,
-        procedure: 'General Surgical Standby',
+        procedure: null,
         surgeon: 'Unassigned',
         cssdPackId: null,
-        readinessScore: 100,
-        utilization: 65,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.5°C',
         humidity: '45%',
         airChanges: '24 / hr'
@@ -296,11 +291,11 @@ export const TheatresPage = () => {
         specialty: 'General Surgery',
         status: 'AVAILABLE',
         patient: null,
-        procedure: 'General Surgical Standby',
+        procedure: null,
         surgeon: 'Unassigned',
         cssdPackId: null,
-        readinessScore: 100,
-        utilization: 60,
+        readinessScore: 0,
+        utilization: 0,
         temperature: '19.5°C',
         humidity: '45%',
         airChanges: '24 / hr'
@@ -399,7 +394,7 @@ export const TheatresPage = () => {
               <span className="cssd-kpi-num font-display text-amber">{turnoverCount}</span>
               <span className="cssd-kpi-unit font-mono">suites</span>
             </div>
-            <span className="cssd-kpi-sub">Avg turnover: 21m</span>
+            <span className="cssd-kpi-sub">Cleaning &amp; prep</span>
           </div>
         </div>
 
@@ -429,9 +424,9 @@ export const TheatresPage = () => {
           <div className="cssd-kpi-left">
             <span className="cssd-kpi-title font-mono">UTILIZATION RATE</span>
             <div className="cssd-kpi-val-row">
-              <span className="cssd-kpi-num font-display text-purple">82.0%</span>
+              <span className="cssd-kpi-num font-display text-purple">{suitesList.length > 0 ? ((activeCount / suitesList.length) * 100).toFixed(1) : '0.0'}%</span>
             </div>
-            <span className="cssd-kpi-sub">+4.2% vs target</span>
+            <span className="cssd-kpi-sub">Active / total suites</span>
           </div>
         </div>
       </div>
@@ -445,19 +440,22 @@ export const TheatresPage = () => {
               LIVE SURGICAL PIPELINE FLOW
             </span>
           </div>
-          <span className="font-mono text-muted" style={{ fontSize: '11px' }}>14 Total Surgical Cases Scheduled Today</span>
+          <span className="font-mono text-muted" style={{ fontSize: '11px' }}>{(workflow.surgeries || []).length} Total Surgical Cases Scheduled Today</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          {[
-            { label: 'WAITING', count: 3, bg: '#f1f5f9', color: '#475569' },
-            { label: 'PATIENT READY', count: 2, bg: '#dcfce7', color: '#15803d' },
-            { label: 'PRE-OP IN OT', count: 1, bg: '#fffbe6', color: '#b45309' },
-            { label: 'IN SURGERY', count: 4, bg: '#fee2e2', color: '#b91c1c' },
-            { label: 'RECOVERY', count: 2, bg: '#e0e7ff', color: '#4338ca' },
-            { label: 'TURNOVER', count: 1, bg: '#fef3c7', color: '#b45309' },
-            { label: 'COMPLETE', count: 3, bg: '#ecfdf5', color: '#047857' },
-          ].map((st, i, arr) => (
+          {(() => {
+            const allPatients = workflow.patients || [];
+            const pipelineCounts = [
+              { label: 'WAITING', count: allPatients.filter(p => ['ADMITTED', 'REGISTERED', 'ASSESSMENT'].includes((p.admission_status || '').toUpperCase())).length, bg: '#f1f5f9', color: '#475569' },
+              { label: 'PATIENT READY', count: allPatients.filter(p => ['OT_READY', 'PRE_OP'].includes((p.admission_status || '').toUpperCase())).length, bg: '#dcfce7', color: '#15803d' },
+              { label: 'PRE-OP IN OT', count: allPatients.filter(p => (p.admission_status || '').toUpperCase() === 'CSSD').length, bg: '#fffbe6', color: '#b45309' },
+              { label: 'IN SURGERY', count: allPatients.filter(p => (p.admission_status || '').toUpperCase() === 'IN_SURGERY').length, bg: '#fee2e2', color: '#b91c1c' },
+              { label: 'RECOVERY', count: allPatients.filter(p => ['RECOVERY', 'POST_OP_MONITORING'].includes((p.admission_status || '').toUpperCase())).length, bg: '#e0e7ff', color: '#4338ca' },
+              { label: 'TURNOVER', count: suitesList.filter(s => s.status === 'TURNOVER').length, bg: '#fef3c7', color: '#b45309' },
+              { label: 'COMPLETE', count: allPatients.filter(p => ['DISCHARGED', 'DISCHARGE_READY'].includes((p.admission_status || '').toUpperCase())).length, bg: '#ecfdf5', color: '#047857' },
+            ];
+            return pipelineCounts.map((st, i, arr) => (
             <React.Fragment key={st.label}>
               <div style={{
                 flex: 1,
@@ -474,7 +472,8 @@ export const TheatresPage = () => {
               </div>
               {i < arr.length - 1 && <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />}
             </React.Fragment>
-          ))}
+          ));
+          })()}
         </div>
       </div>
 
@@ -603,7 +602,7 @@ export const TheatresPage = () => {
                       <PackageCheck size={13} className={ot.cssdVerified ? 'text-teal' : 'text-amber'} />
                       <span>CSSD: {ot.cssdPackId || 'Pack Verified'}</span>
                     </div>
-                    <span className="font-bold text-teal">Readiness: {ot.readinessScore || 92}%</span>
+                    <span className="font-bold text-teal">Readiness: {ot.readinessScore || 0}%</span>
                   </div>
                 )}
               </div>

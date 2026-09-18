@@ -42,16 +42,16 @@ export const NursingPortal = () => {
     const stable = recovery.filter(p => (p.recoveryStatus || 'STABLE') === 'STABLE');
     const attention = recovery.filter(p => p.recoveryStatus === 'ATTENTION_REQUIRED');
     return {
-      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length || 4,
-      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length || 2,
-      recovery: recovery.length || 4,
-      stable: stable.length || 3,
-      attention: attention.length || 1,
-      readyWard: patients.filter(p => p.admission_status === 'READY_FOR_WARD').length || 2,
-      dischargeAssess: patients.filter(p => p.admission_status === 'DISCHARGE_ASSESSMENT').length || 2,
-      dischargeReady: patients.filter(p => p.admission_status === 'DISCHARGE_READY').length || 1,
-      discharged: patients.filter(p => p.admission_status === 'DISCHARGED').length || 3,
-      pendingHandoff: patients.filter(p => ['READY_FOR_WARD', 'DISCHARGE_READY'].includes(p.admission_status)).length || 3,
+      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length,
+      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length,
+      recovery: recovery.length,
+      stable: stable.length,
+      attention: attention.length,
+      readyWard: patients.filter(p => p.admission_status === 'READY_FOR_WARD').length,
+      dischargeAssess: patients.filter(p => p.admission_status === 'DISCHARGE_ASSESSMENT').length,
+      dischargeReady: patients.filter(p => p.admission_status === 'DISCHARGE_READY').length,
+      discharged: patients.filter(p => p.admission_status === 'DISCHARGED').length,
+      pendingHandoff: patients.filter(p => ['READY_FOR_WARD', 'DISCHARGE_READY'].includes(p.admission_status)).length,
     };
   }, [patients]);
 
@@ -166,7 +166,14 @@ export const NursingPortal = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map(p => {
+              {filteredPatients.length === 0 ? (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No patients available yet
+                  </td>
+                </tr>
+              ) : (
+                filteredPatients.map(p => {
                 const st = (p.admission_status || 'ADMITTED').toUpperCase();
                 const isEmergency = p.urgency === 'EMERGENCY' || p.priority === 'EMERGENCY';
                 const isRecovery = ['RECOVERY', 'POST_OP_MONITORING', 'READY_FOR_WARD'].includes(st);
@@ -207,7 +214,7 @@ export const NursingPortal = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

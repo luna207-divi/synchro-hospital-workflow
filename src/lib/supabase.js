@@ -8,17 +8,20 @@ import { createClient } from '@supabase/supabase-js';
    so the application operates cleanly in local/demo mode without WebSocket errors.
    ============================================================ */
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = typeof import.meta.env.VITE_SUPABASE_URL === 'string' ? import.meta.env.VITE_SUPABASE_URL.trim() : '';
+const rawKey = typeof import.meta.env.VITE_SUPABASE_ANON_KEY === 'string' ? import.meta.env.VITE_SUPABASE_ANON_KEY.trim() : '';
 
-const isValidSupabase = !!(
+export const isSupabaseConfigured = !!(
   rawUrl &&
   rawKey &&
   !rawUrl.includes('your-project') &&
   !rawUrl.includes('placeholder') &&
   !rawKey.includes('your-anon-key') &&
-  rawUrl.startsWith('https://')
+  !rawKey.includes('placeholder') &&
+  (rawUrl.startsWith('https://') || rawUrl.startsWith('http://'))
 );
+
+const isValidSupabase = isSupabaseConfigured;
 
 if (!isValidSupabase) {
   console.info('[Synchro] Operating in Offline Demo Mode (Realtime Database Subscription Disabled).');
@@ -38,3 +41,4 @@ export const supabase = isValidSupabase
       },
     })
   : null;
+

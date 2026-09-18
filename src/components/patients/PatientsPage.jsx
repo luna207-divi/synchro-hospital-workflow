@@ -38,11 +38,11 @@ export const PatientsPage = () => {
   });
 
   // KPI Numbers
-  const totalCount = patients.length > 0 ? patients.length : 48;
-  const admittedCount = patients.filter(p => p.admission_status === 'ADMITTED').length || 32;
-  const inOtCount = patients.filter(p => p.admission_status === 'IN_SURGERY').length || 6;
-  const readyDischargeCount = 7;
-  const criticalCount = patients.filter(p => p.admission_status === 'EMERGENCY').length || 3;
+  const totalCount = patients.length;
+  const admittedCount = patients.filter(p => p.admission_status === 'ADMITTED').length;
+  const inOtCount = patients.filter(p => p.admission_status === 'IN_SURGERY').length;
+  const readyDischargeCount = patients.filter(p => p.admission_status === 'DISCHARGED').length;
+  const criticalCount = patients.filter(p => p.admission_status === 'EMERGENCY').length;
 
   const openPatientDetail = (p) => {
     const surgery = (workflow.surgeries || []).find(s => s.patient_id === p.id) || null;
@@ -193,11 +193,18 @@ export const PatientsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredPatients.slice(0, 30).map((p) => {
+            {filteredPatients.length === 0 ? (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                  No patients available yet
+                </td>
+              </tr>
+            ) : (
+              filteredPatients.slice(0, 30).map((p) => {
               const statusKey = p.admission_status.toLowerCase();
               const admissionDate = p.admissions?.[0]?.admission_date 
                 ? new Date(p.admissions[0].admission_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                : '18 Aug 2026';
+                : '—';
 
               return (
                 <tr key={p.id} className="patient-row" onClick={() => openPatientDetail(p)}>
@@ -213,7 +220,7 @@ export const PatientsPage = () => {
                     </div>
                   </td>
                   <td className="font-mono">
-                    {p.assigned_bed ? `${p.assigned_bed.room.room_number} / ${p.assigned_bed.bed_number}` : 'R-103 / B-3'}
+                    {p.assigned_bed ? `${p.assigned_bed.room.room_number} / ${p.assigned_bed.bed_number}` : '—'}
                   </td>
                   <td>
                     <span className={`status-badge-chip status-chip-${statusKey}`}>
@@ -240,7 +247,7 @@ export const PatientsPage = () => {
                   </td>
                 </tr>
               );
-            })}
+            }))}
           </tbody>
         </table>
 

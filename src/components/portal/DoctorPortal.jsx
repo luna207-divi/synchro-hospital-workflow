@@ -26,13 +26,13 @@ export const DoctorPortal = () => {
   // Derived counts
   const counts = useMemo(() => {
     return {
-      myPatients: patients.filter(p => (p.assigned_doctor || '').includes('Sharma')).length || 8,
+      myPatients: patients.filter(p => (p.assigned_doctor || '').includes('Sharma')).length,
       today: patients.length,
-      waitingAssess: patients.filter(p => p.admission_status === 'ASSESSMENT' || p.admission_status === 'REGISTERED').length || 3,
-      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length || 4,
-      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length || 2,
-      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length || 2,
-      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length || 3,
+      waitingAssess: patients.filter(p => p.admission_status === 'ASSESSMENT' || p.admission_status === 'REGISTERED').length,
+      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length,
+      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length,
+      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length,
+      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length,
     };
   }, [patients]);
 
@@ -175,7 +175,14 @@ export const DoctorPortal = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map(p => {
+              {filteredPatients.length === 0 ? (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No patients available yet
+                  </td>
+                </tr>
+              ) : (
+                filteredPatients.map(p => {
                 const isEmergency = p.urgency === 'EMERGENCY' || p.priority === 'EMERGENCY';
                 const st = (p.admission_status || p.workflowStage || 'ADMITTED').toUpperCase();
 
@@ -234,7 +241,7 @@ export const DoctorPortal = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

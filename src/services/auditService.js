@@ -46,10 +46,10 @@ class AuditService extends BaseService {
         raw: row
       }));
 
-      return { data: formatted.length > 0 ? formatted : this.getMockAuditLogs(), error: null };
+      return { data: formatted, error: null };
     } catch (err) {
-      console.warn('[AuditService] getAuditLogs error, returning mock fallback:', err);
-      return { data: this.getMockAuditLogs(), error: null };
+      console.warn('[AuditService] getAuditLogs error:', err);
+      return { data: [], error: null };
     }
   }
 
@@ -74,62 +74,7 @@ class AuditService extends BaseService {
   }
 
   getMockAuditLogs() {
-    return [
-      {
-        id: 'aud-101',
-        who: 'Technician S. Rao',
-        role: 'CSSD Technician',
-        action: 'CSSD_ASSIGNED_PACK',
-        what: 'Assigned sterile pack #CSSD-00428 to Suite OT-02 for Laparoscopic Cholecystectomy.',
-        relatedRecord: 'CSSD PACK: CSSD-00428',
-        when: '11:42 AM • Today'
-      },
-      {
-        id: 'aud-100',
-        who: 'Dr. K. Patel',
-        role: 'Lead Surgeon',
-        action: 'DOCTOR_ACKNOWLEDGED_ALERT',
-        what: 'Acknowledged OT-02 Instrument Ready notification. Confirmed surgical team in transit.',
-        relatedRecord: 'SURGERY: Case #1048',
-        when: '11:38 AM • Today'
-      },
-      {
-        id: 'aud-099',
-        who: 'Nurse J. Doe',
-        role: 'Operating Nurse Lead',
-        action: 'NURSE_MARKED_PATIENT_READY',
-        what: 'Cleared 5-gate pre-op readiness checklist for Patient Elena Rostova (P-1024).',
-        relatedRecord: 'PATIENT: P-1024',
-        when: '11:20 AM • Today'
-      },
-      {
-        id: 'aud-098',
-        who: 'Admissions Officer M. Vance',
-        role: 'Receptionist',
-        action: 'FRONT_DESK_ADMITTED_PATIENT',
-        what: 'Completed elective intake registration and assigned Pre-Op Bay 03 bed R101-C.',
-        relatedRecord: 'ADMISSION: ADM-9204',
-        when: '10:45 AM • Today'
-      },
-      {
-        id: 'aud-097',
-        who: 'Admin R. Sharma',
-        role: 'Hospital Administrator',
-        action: 'ADMIN_CHANGED_ROLE',
-        what: 'Updated access permissions for Staff Dr. A. Miller to SURGEON and OT_MANAGER.',
-        relatedRecord: 'PROFILE: Dr. A. Miller',
-        when: '10:15 AM • Today'
-      },
-      {
-        id: 'aud-096',
-        who: 'System Workflow Engine',
-        role: 'Automated Engine',
-        action: 'BILLING_CHARGE_GENERATED',
-        what: 'Generated procedure invoice INV-2026-991 (₹45,000) upon surgery completion.',
-        relatedRecord: 'INVOICE: INV-2026-991',
-        when: '09:50 AM • Today'
-      }
-    ];
+    return [];
   }
 }
 

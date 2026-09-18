@@ -7,6 +7,7 @@ import {
 /* ── Page Components ──────────────────────────────────────── */
 import { LandingPage } from './components/landing/LandingPage';
 import { LoginPage } from './components/auth/LoginPage';
+import { RegisterPage } from './components/auth/RegisterPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppShell } from './AppShell';
 
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
   {
     path: '/signin',
     element: <LoginPage />,
+  },
+  {
+    path: '/register',
+    element: <RegisterPage />,
   },
 
   /* ── Role Dashboards (Wrapped in Protected AppShell & Guards) ── */

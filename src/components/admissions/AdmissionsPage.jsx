@@ -69,14 +69,17 @@ export const AdmissionsPage = () => {
   const counts = useMemo(() => {
     return {
       today: patients.length,
-      admissions: patients.filter(p => p.admission_status === 'ADMITTED').length || 24,
-      waiting: patients.filter(p => p.admission_status === 'REGISTERED').length || 8,
-      assessment: patients.filter(p => p.admission_status === 'ASSESSMENT').length || 12,
-      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length || 12,
-      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length || 5,
-      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length || 6,
-      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length || 9,
-      discharge: patients.filter(p => p.admission_status === 'DISCHARGED').length || 4,
+      admissions: patients.filter(p => p.admission_status === 'ADMITTED').length,
+      waiting: patients.filter(p => p.admission_status === 'REGISTERED').length,
+      assessment: patients.filter(p => p.admission_status === 'ASSESSMENT').length,
+      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length,
+      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length,
+      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length,
+      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length,
+      discharge: patients.filter(p => p.admission_status === 'DISCHARGED').length,
+      pendingConsent: patients.filter(p => (p.consents || []).some(c => c.status === 'PENDING')).length,
+      pendingCssd: patients.filter(p => p.admission_status === 'CSSD').length,
+      emergencyStat: patients.filter(p => p.admission_status === 'EMERGENCY' || p.urgency === 'EMERGENCY').length,
     };
   }, [patients]);
 
@@ -123,32 +126,32 @@ export const AdmissionsPage = () => {
         <div className="attention-grid">
           <div className="attention-item item-amber">
             <span className="attention-dot dot-amber" />
-            <span className="attention-count">3</span>
+            <span className="attention-count">{counts.waiting}</span>
             <span className="attention-desc">Patients waiting for registration</span>
           </div>
 
           <div className="attention-item item-blue">
             <span className="attention-dot dot-blue" />
-            <span className="attention-count">2</span>
-            <span className="attention-desc">Pending consents (Priya Sharma P-1048)</span>
+            <span className="attention-count">{counts.pendingConsent}</span>
+            <span className="attention-desc">Pending consents</span>
           </div>
 
           <div className="attention-item item-red">
             <Flame size={13} style={{ color: '#dc2626' }} />
-            <span className="attention-count">1</span>
-            <span className="attention-desc">Emergency STAT patient (Arjun Das P-1099)</span>
+            <span className="attention-count">{counts.emergencyStat}</span>
+            <span className="attention-desc">Emergency STAT patients</span>
           </div>
 
           <div className="attention-item item-purple">
             <span className="attention-dot dot-purple" />
-            <span className="attention-count">2</span>
+            <span className="attention-count">{counts.pendingCssd}</span>
             <span className="attention-desc">CSSD verification pending</span>
           </div>
 
           <div className="attention-item item-green">
             <span className="attention-dot dot-green" />
-            <span className="attention-count">1</span>
-            <span className="attention-desc">OT-ready patient awaiting transfer (Ananya Rao P-1042)</span>
+            <span className="attention-count">{counts.otReady}</span>
+            <span className="attention-desc">OT-ready patients awaiting transfer</span>
           </div>
         </div>
       </div>
@@ -217,8 +220,8 @@ export const AdmissionsPage = () => {
             { id: 'ALL', label: 'All Patients' },
             { id: 'WAITING_REG', label: `Registered (${counts.waiting})` },
             { id: 'WAITING_ASSESS', label: `Assessed (${counts.assessment})` },
-            { id: 'WAITING_CONSENT', label: 'Consent Pending (2)' },
-            { id: 'WAITING_CSSD', label: 'CSSD Pending (3)' },
+            { id: 'WAITING_CONSENT', label: `Consent Pending (${counts.pendingConsent})` },
+            { id: 'WAITING_CSSD', label: `CSSD Pending (${counts.pendingCssd})` },
             { id: 'OT_READY', label: `OT Ready (${counts.otReady})` },
             { id: 'IN_OT', label: `In OT (${counts.inOt})` },
             { id: 'RECOVERY', label: `Recovery (${counts.recovery})` },
@@ -265,7 +268,14 @@ export const AdmissionsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map(p => {
+              {filteredPatients.length === 0 ? (
+                <tr>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No patients available yet
+                  </td>
+                </tr>
+              ) : (
+                filteredPatients.map(p => {
                 const isEmergency = p.urgency === 'EMERGENCY' || p.admission_status === 'EMERGENCY';
                 const st = (p.admission_status || p.workflowStage || 'ADMITTED').toUpperCase();
 
@@ -328,7 +338,7 @@ export const AdmissionsPage = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

@@ -282,7 +282,14 @@ export const CSSDPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredPacks.map((pack) => {
+              {filteredPacks.length === 0 ? (
+                <tr>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No records available yet
+                  </td>
+                </tr>
+              ) : (
+                filteredPacks.map((pack) => {
                 const ss = getStatusStyle(pack.computedStatus);
                 const expiryHrs = getHoursUntilExpiry(pack.expiry);
                 const isExpiredComputed = pack.computedStatus === 'EXPIRED';
@@ -401,7 +408,7 @@ export const CSSDPage = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

@@ -39,7 +39,9 @@ import {
   AlertOctagon,
   Info,
   CheckSquare,
-  TrendingDown
+  TrendingDown,
+  IdCard,
+  XCircle
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
@@ -47,6 +49,7 @@ import { SearchInput } from '../common/Input';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { WorkflowTimeline } from '../dashboard/WorkflowTimeline';
 import { ReportsPage } from '../reports/ReportsPage';
+import { supabase } from '../../lib/supabase';
 import './AdminPortal.css';
 
 export const AdminPortal = () => {
@@ -54,6 +57,64 @@ export const AdminPortal = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [timeframe, setTimeframe] = useState('TODAY');
   const [syncTime, setSyncTime] = useState(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [pendingRegistrations, setPendingRegistrations] = useState([]);
+  const [regLoading, setRegLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'Users' && supabase) {
+      const loadRegistrations = async () => {
+        setRegLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('member_registrations')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            setPendingRegistrations(data);
+          }
+        } catch (_) {}
+        setRegLoading(false);
+      };
+      loadRegistrations();
+    }
+  }, [activeTab]);
+
+  const handleApproveMember = async (reg) => {
+    try {
+      if (supabase) {
+        await supabase
+          .from('member_registrations')
+          .update({ status: 'APPROVED', reviewed_at: new Date().toISOString() })
+          .eq('id', reg.id);
+
+        if (reg.user_id) {
+          await supabase
+            .from('profiles')
+            .update({ is_active: true })
+            .eq('id', reg.user_id);
+        }
+      }
+      setPendingRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: 'APPROVED' } : r));
+      alert(`Registration for ${reg.full_name} has been APPROVED. User account is now active.`);
+    } catch (err) {
+      alert(`Approval error: ${err.message}`);
+    }
+  };
+
+  const handleRejectMember = async (reg) => {
+    try {
+      if (supabase) {
+        await supabase
+          .from('member_registrations')
+          .update({ status: 'REJECTED', reviewed_at: new Date().toISOString() })
+          .eq('id', reg.id);
+      }
+      setPendingRegistrations(prev => prev.map(r => r.id === reg.id ? { ...r, status: 'REJECTED' } : r));
+      alert(`Registration for ${reg.full_name} has been REJECTED.`);
+    } catch (err) {
+      alert(`Rejection error: ${err.message}`);
+    }
+  };
 
   // Live state from WorkflowContext
   const patients = workflow.patients || [];
@@ -69,31 +130,31 @@ export const AdminPortal = () => {
   };
 
   // Compute Live Metrics
-  const totalPatientsCount = patients.length > 0 ? patients.length : 1248;
-  const todayAdmissionsCount = patients.filter(p => p.admission_status === 'ADMITTED' || p.workflowStage === 'ADMITTED').length || 86;
-  const activeSurgeriesCount = surgeries.filter(s => s.status === 'IN_SURGERY').length || theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length || 6;
-  const activeTheatresCount = theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length || 6;
-  const otUtilizationRate = Math.round((activeTheatresCount / 12) * 100) || 82;
+  const totalPatientsCount = patients.length;
+  const todayAdmissionsCount = patients.filter(p => p.admission_status === 'ADMITTED' || p.workflowStage === 'ADMITTED').length;
+  const activeSurgeriesCount = surgeries.filter(s => s.status === 'IN_SURGERY').length || theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length;
+  const activeTheatresCount = theatres.filter(t => t.status === 'ACTIVE' || t.status === 'IN_PROCEDURE').length;
+  const otUtilizationRate = theatres.length > 0 ? Math.round((activeTheatresCount / theatres.length) * 100) : 0;
   const sterilePacksCount = cssdPacks.filter(p => p.status === 'STERILE').length;
-  const cssdReadinessPct = cssdPacks.length > 0 ? Math.round((sterilePacksCount / cssdPacks.length) * 100) : 94;
+  const cssdReadinessPct = cssdPacks.length > 0 ? Math.round((sterilePacksCount / cssdPacks.length) * 100) : 0;
   const activeAlertsCount = alerts.filter(a => a.status !== 'Resolved').length;
   const criticalAlertsCount = alerts.filter(a => a.severity === 'Critical' && a.status !== 'Resolved').length;
   const warningAlertsCount = alerts.filter(a => a.severity === 'Warning' && a.status !== 'Resolved').length;
-  const availableBedsCount = 23;
-  const totalBedsCount = 120;
-  const delayedWorkflowsCount = alerts.filter(a => a.severity === 'Warning' || a.severity === 'Critical').length || 4;
+  const availableBedsCount = 0;
+  const totalBedsCount = 0;
+  const delayedWorkflowsCount = alerts.filter(a => a.severity === 'Warning' || a.severity === 'Critical').length;
 
   // Patient Funnel Counts
   const funnel = useMemo(() => {
     return {
-      registered: patients.filter(p => p.admission_status === 'REGISTERED').length || 86,
-      admitted: patients.filter(p => p.admission_status === 'ADMITTED').length || 72,
-      assessed: patients.filter(p => p.admission_status === 'ASSESSMENT').length || 64,
-      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length || 42,
-      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length || 18,
-      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length || 6,
-      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length || 8,
-      discharge: patients.filter(p => p.admission_status === 'DISCHARGED').length || 12,
+      registered: patients.filter(p => p.admission_status === 'REGISTERED').length,
+      admitted: patients.filter(p => p.admission_status === 'ADMITTED').length,
+      assessed: patients.filter(p => p.admission_status === 'ASSESSMENT').length,
+      preOp: patients.filter(p => p.admission_status === 'PRE_OP').length,
+      otReady: patients.filter(p => p.admission_status === 'OT_READY' || p.admission_status === 'CSSD').length,
+      inOt: patients.filter(p => p.admission_status === 'IN_SURGERY').length,
+      recovery: patients.filter(p => p.admission_status === 'RECOVERY').length,
+      discharge: patients.filter(p => p.admission_status === 'DISCHARGED').length,
     };
   }, [patients]);
 
@@ -213,7 +274,14 @@ export const AdminPortal = () => {
                 </tr>
               </thead>
               <tbody>
-                {timelineEvents.map((evt, idx) => {
+                {timelineEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                      No audit events available yet
+                    </td>
+                  </tr>
+                ) : (
+                  timelineEvents.map((evt, idx) => {
                   const isDenied = evt.type?.includes('DENIED') || evt.desc?.toLowerCase().includes('denied') || evt.desc?.toLowerCase().includes('held');
                   return (
                     <tr key={evt.id || idx}>
@@ -227,57 +295,150 @@ export const AdminPortal = () => {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>
         </div>
       ) : activeTab === 'Users' ? (
-        <div className="ot-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div>
-              <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0 }}>PROTOTYPE USER MANAGEMENT</h2>
-              <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Active Hospital Personnel & Role Assignments</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Pending Member Registration Requests */}
+          <div className="ot-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div>
+                <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>NEW MEMBER REGISTRATION REQUESTS</span>
+                  {pendingRegistrations.filter(r => r.status === 'PENDING').length > 0 && (
+                    <Badge variant="amber" size="xs">{pendingRegistrations.filter(r => r.status === 'PENDING').length} PENDING</Badge>
+                  )}
+                </h2>
+                <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Pending Team Member Identity Verification & Account Approval</span>
+              </div>
             </div>
-            <Button size="sm" variant="primary" icon={Plus} onClick={() => alert('New user invitation form.')}>Add User</Button>
+
+            <div className="table-responsive-wrapper">
+              <table className="cssd-data-table">
+                <thead>
+                  <tr>
+                    <th>NAME</th>
+                    <th>EMAIL & EMP ID</th>
+                    <th style={{ width: '130px' }}>REQUESTED ROLE</th>
+                    <th>DEPARTMENT</th>
+                    <th>ID PROOF</th>
+                    <th style={{ width: '100px' }}>STATUS</th>
+                    <th style={{ width: '160px', textAlign: 'right' }}>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingRegistrations.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                        No new member registration requests at this time.
+                      </td>
+                    </tr>
+                  ) : (
+                    pendingRegistrations.map((reg) => (
+                      <tr key={reg.id}>
+                        <td><span className="font-bold text-navy-head" style={{ fontSize: '13px' }}>{reg.full_name}</span></td>
+                        <td>
+                          <div style={{ fontSize: '12px' }}>{reg.email}</div>
+                          <span className="font-mono text-muted" style={{ fontSize: '11px' }}>ID: {reg.employee_id}</span>
+                        </td>
+                        <td><Badge variant="purple" size="xs">{reg.requested_role}</Badge></td>
+                        <td style={{ fontSize: '12px' }}>{reg.department}</td>
+                        <td style={{ fontSize: '12px' }}>
+                          <span className="font-bold" style={{ display: 'block', fontSize: '11px' }}>{reg.id_proof_type}</span>
+                          <span className="font-mono text-muted" style={{ fontSize: '10px' }}>{reg.id_proof_file_name || 'Document Attached'}</span>
+                        </td>
+                        <td>
+                          <Badge 
+                            variant={reg.status === 'APPROVED' ? 'emerald' : reg.status === 'REJECTED' ? 'red' : 'amber'} 
+                            size="xs"
+                          >
+                            {reg.status}
+                          </Badge>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {reg.status === 'PENDING' ? (
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <Button 
+                                size="xs" 
+                                variant="primary" 
+                                icon={Check} 
+                                onClick={() => handleApproveMember(reg)}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                size="xs" 
+                                variant="outline" 
+                                icon={XCircle} 
+                                onClick={() => handleRejectMember(reg)}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-muted" style={{ fontSize: '11px' }}>
+                              {reg.status === 'APPROVED' ? 'Activated' : 'Denied'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="table-responsive-wrapper">
-            <table className="cssd-data-table">
-              <thead>
-                <tr>
-                  <th>NAME</th>
-                  <th>EMAIL</th>
-                  <th style={{ width: '130px' }}>ROLE</th>
-                  <th>DEPARTMENT</th>
-                  <th style={{ width: '100px' }}>STATUS</th>
-                  <th style={{ width: '120px' }}>LAST ACTIVE</th>
-                  <th style={{ width: '100px', textAlign: 'right' }}>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { name: 'Dr. Evelyn Vance, DHA', email: 'admin@synchro.health', role: 'ADMIN', dept: 'Executive Command', status: 'ACTIVE', last: 'Just now' },
-                  { name: 'Sarah Jenkins, RN', email: 'frontdesk@synchro.health', role: 'FRONT_DESK', dept: 'Admissions Intake', status: 'ACTIVE', last: '2m ago' },
-                  { name: 'Dr. Rajesh Sharma, MD', email: 'doctor@synchro.health', role: 'DOCTOR', dept: 'General Surgery', status: 'ACTIVE', last: '1m ago' },
-                  { name: 'Maria Vance, BSN', email: 'nurse@synchro.health', role: 'NURSE', dept: 'Central Nursing', status: 'ACTIVE', last: '3m ago' },
-                  { name: 'Priya Nair, CSSD Lead', email: 'cssd@synchro.health', role: 'CSSD', dept: 'Sterile Processing', status: 'ACTIVE', last: '5m ago' },
-                  { name: 'Dr. James Gomez, MD', email: 'ot@synchro.health', role: 'OT_MANAGER', dept: 'OT Management', status: 'ACTIVE', last: '4m ago' },
-                ].map((u, i) => (
-                  <tr key={i}>
-                    <td><span className="font-bold text-navy-head" style={{ fontSize: '13px' }}>{u.name}</span></td>
-                    <td className="font-mono" style={{ fontSize: '11px' }}>{u.email}</td>
-                    <td><Badge variant="purple" size="xs">{u.role}</Badge></td>
-                    <td style={{ fontSize: '12px' }}>{u.dept}</td>
-                    <td><Badge variant="teal" size="xs">{u.status}</Badge></td>
-                    <td className="font-mono text-muted" style={{ fontSize: '11px' }}>{u.last}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <Button size="xs" variant="secondary" onClick={() => alert(`Status toggled for ${u.name}.`)}>Deactivate</Button>
-                    </td>
+          {/* Active Hospital Personnel Table */}
+          <div className="ot-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div>
+                <h2 className="font-display font-bold text-navy-head" style={{ fontSize: '18px', margin: 0 }}>ACTIVE PERSONNEL & ROLE ASSIGNMENTS</h2>
+                <span className="font-mono text-muted" style={{ fontSize: '11px' }}>Active Hospital Staff Accounts & Permissions</span>
+              </div>
+              <Button size="sm" variant="primary" icon={Plus} onClick={() => alert('New user invitation form.')}>Add User</Button>
+            </div>
+
+            <div className="table-responsive-wrapper">
+              <table className="cssd-data-table">
+                <thead>
+                  <tr>
+                    <th>NAME</th>
+                    <th>EMAIL</th>
+                    <th style={{ width: '130px' }}>ROLE</th>
+                    <th>DEPARTMENT</th>
+                    <th style={{ width: '100px' }}>STATUS</th>
+                    <th style={{ width: '120px' }}>LAST ACTIVE</th>
+                    <th style={{ width: '100px', textAlign: 'right' }}>ACTION</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {[
+                    { name: 'Dr. Evelyn Vance, DHA', email: 'admin@synchro.health', role: 'ADMIN', dept: 'Executive Command', status: 'ACTIVE', last: 'Just now' },
+                    { name: 'Sarah Jenkins, RN', email: 'frontdesk@synchro.health', role: 'FRONT_DESK', dept: 'Admissions Intake', status: 'ACTIVE', last: '2m ago' },
+                    { name: 'Dr. Rajesh Sharma, MD', email: 'doctor@synchro.health', role: 'DOCTOR', dept: 'General Surgery', status: 'ACTIVE', last: '1m ago' },
+                    { name: 'Maria Vance, BSN', email: 'nurse@synchro.health', role: 'NURSE', dept: 'Central Nursing', status: 'ACTIVE', last: '3m ago' },
+                    { name: 'Priya Nair, CSSD Lead', email: 'cssd@synchro.health', role: 'CSSD', dept: 'Sterile Processing', status: 'ACTIVE', last: '5m ago' },
+                    { name: 'Dr. James Gomez, MD', email: 'ot@synchro.health', role: 'OT_MANAGER', dept: 'OT Management', status: 'ACTIVE', last: '4m ago' },
+                  ].map((u, i) => (
+                    <tr key={i}>
+                      <td><span className="font-bold text-navy-head" style={{ fontSize: '13px' }}>{u.name}</span></td>
+                      <td className="font-mono" style={{ fontSize: '11px' }}>{u.email}</td>
+                      <td><Badge variant="purple" size="xs">{u.role}</Badge></td>
+                      <td style={{ fontSize: '12px' }}>{u.dept}</td>
+                      <td><Badge variant="teal" size="xs">{u.status}</Badge></td>
+                      <td className="font-mono text-muted" style={{ fontSize: '11px' }}>{u.last}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Button size="xs" variant="secondary" onClick={() => alert(`Status toggled for ${u.name}.`)}>Deactivate</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : (
@@ -648,7 +809,14 @@ export const AdminPortal = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {timelineEvents.slice(0, 8).map(evt => (
+                  {timelineEvents.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                        No audit events available yet
+                      </td>
+                    </tr>
+                  ) : (
+                    timelineEvents.slice(0, 8).map(evt => (
                     <tr key={evt.id}>
                       <td className="font-mono" style={{ fontSize: '11px' }}>{evt.timestamp}</td>
                       <td>
@@ -672,7 +840,7 @@ export const AdminPortal = () => {
                         {evt.desc}
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
